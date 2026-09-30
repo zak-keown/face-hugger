@@ -23,6 +23,7 @@
 		A2E4F09F3BA1CA40F61307D1 /* BenchControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A275FB7C1D328FEF9992FD0F /* BenchControls.swift */; };
 		AA80942DE40DA75EB0CAAE29 /* FaceHuggerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */; };
 		CFB98D4306B669B91DE3E6AA /* requirements.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3D18595E3830863CD781BAEA /* requirements.txt */; };
+		D9146ECEDC66D984EC8EF92C /* RuntimeBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 976AF0E8873657B89DF38E7C /* RuntimeBootstrap.swift */; };
 		F47E4754D8362D313622328B /* Pairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D441123AB181F9E22F234FDA /* Pairing.swift */; };
 /* End PBXBuildFile section */
 
@@ -32,6 +33,7 @@
 		5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceHuggerApp.swift; sourceTree = "<group>"; };
 		71F4A81CCDC3EEFA5352E7B6 /* Staging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Staging.swift; sourceTree = "<group>"; };
 		793A9EA74C7F945CC4335129 /* BenchTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchTheme.swift; sourceTree = "<group>"; };
+		976AF0E8873657B89DF38E7C /* RuntimeBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeBootstrap.swift; sourceTree = "<group>"; };
 		A2050DFC39D4E98D1893B50F /* Services.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services.swift; sourceTree = "<group>"; };
 		A275FB7C1D328FEF9992FD0F /* BenchControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchControls.swift; sourceTree = "<group>"; };
 		A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadQueueControl.swift; sourceTree = "<group>"; };
@@ -69,6 +71,7 @@
 				5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */,
 				E04D4F232BBF187F37D6ED3F /* MainView.swift */,
 				A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */,
+				976AF0E8873657B89DF38E7C /* RuntimeBootstrap.swift */,
 				A2050DFC39D4E98D1893B50F /* Services.swift */,
 				B49DCA59F65A1B0D8E253451 /* Sheets.swift */,
 				71F4A81CCDC3EEFA5352E7B6 /* Staging.swift */,
@@ -187,6 +190,7 @@
 				F47E4754D8362D313622328B /* Pairing.swift in Sources */,
 				4019F2083B4CC0FD41A6F587 /* Recovery.swift in Sources */,
 				6245C0905AE4F4A28AEEFFE2 /* RepoBrowser.swift in Sources */,
+				D9146ECEDC66D984EC8EF92C /* RuntimeBootstrap.swift in Sources */,
 				33D0E52753A98C9585966907 /* Services.swift in Sources */,
 				386B6880ECC2143F963A85DF /* Sheets.swift in Sources */,
 				56918ED302092DB1B2230A57 /* Staging.swift in Sources */,

@@ -21,4 +21,9 @@ struct StagingResult: Decodable, Sendable {
 struct RemoteComparison: Decodable, Sendable {
     let paths: [String]
     let complete: Bool
+    let conflicts: [PathConflict]
+}
+struct PathConflict: Decodable, Sendable {
+    let path: String
+    let reason: String
 }

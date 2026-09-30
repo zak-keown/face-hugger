@@ -18,6 +18,8 @@ from pathlib import Path
 import re
 import signal
 import stat
+import sqlite3
+import tempfile
 import subprocess
 import sys
 from urllib.parse import quote
@@ -144,12 +146,18 @@ def upload(args, api) -> None:
     emit("status", message="Checking local files and filters before upload…")
     # Every start/resume validates the current source, including link boundaries.
     # This metadata check is not a snapshot; files must remain stable during upload.
-    scan_folder(args, row_limit=0)
-    if _STOPPING:
-        raise InterruptedError("Upload stopped.")
-    # hf upload can create missing public repos. Require an existing destination;
-    # new repos must go through the app's explicit create/visibility flow.
-    api.repo_info(repo_id=args.repo, repo_type=args.type)
+    with tempfile.TemporaryDirectory(prefix="face-hugger-path-check-") as directory:
+        with contextlib.closing(sqlite3.connect(str(Path(directory) / "paths.sqlite"))) as database:
+            index = PathIndex(database, getattr(args, "destination", ""))
+            scan_folder(args, row_limit=0, included_callback=index.add)
+            database.commit()
+            if _STOPPING:
+                raise InterruptedError("Upload stopped.")
+            # hf upload can create missing public repos. Require explicit creation.
+            api.repo_info(repo_id=args.repo, repo_type=args.type)
+            if index.count:
+                emit("status", message="Checking remote file and folder conflicts…")
+                validate_upload_paths(args, api, index)
     emit("status", message="Starting HF upload. Preparing, transferring and committing may overlap.")
     environment = dict(os.environ, PYTHONUNBUFFERED="1", NO_COLOR="1", HF_HUB_DISABLE_TELEMETRY="1")
     try:
@@ -184,7 +192,7 @@ def upload(args, api) -> None:
 
 
 
-def scan_folder(args, *, filter_objects=None, default_ignores=None, row_limit=2000):
+def scan_folder(args, *, filter_objects=None, default_ignores=None, row_limit=2000, included_callback=None):
     """Read metadata only; use HF's exact folder-upload filter implementation.
 
     System-ignore paths never enter the preview. User-filtered files appear with
@@ -234,6 +242,8 @@ def scan_folder(args, *, filter_objects=None, default_ignores=None, row_limit=20
                     raise ValueError(f"Cannot read included file '{relative}'. Check its permissions.")
                 included_count += 1
                 included_bytes += info.st_size
+                if included_callback is not None:
+                    included_callback(relative)
             if len(files) < row_limit:
                 files.append({"path": relative, "size": info.st_size, "included": included})
         pending.extend(reversed(subdirectories))
@@ -243,12 +253,48 @@ def scan_folder(args, *, filter_objects=None, default_ignores=None, row_limit=20
 
 
 
-def compare_paths(args, api, *, entry_limit=100000):
-    """Compare exact remote names (files or directories), never content equality.
+class PathIndex:
+    """Indexed full remote targets, on disk for uncapped upload preflight."""
+    def __init__(self, database, destination):
+        self.database = database
+        destination = remote_path(destination)
+        self.prefix = destination + "/" if destination else ""
+        self.count = 0
+        database.execute("CREATE TABLE targets (full TEXT PRIMARY KEY, relative TEXT NOT NULL)")
 
-    complete=False never establishes missing paths. Ancestor/prefix conflicts
-    are not detected; presence does not imply the path is replaceable.
-    """
+    def add(self, relative):
+        self.database.execute("INSERT OR IGNORE INTO targets VALUES (?, ?)", (self.prefix + relative, relative))
+        self.count += 1
+
+    def observe(self, entry, *, first_conflict_only=False):
+        path = entry.path
+        row = self.database.execute("SELECT relative FROM targets WHERE full = ?", (path,)).fetchone()
+        exact = row[0] if row else None
+        if type(entry).__name__ == "RepoFolder":
+            conflicts = ([{"path": exact, "reason": f"Remote path '{path}' is a folder, but the staged path is a file."}] if exact else [])
+        else:
+            # '/' followed by any descendant sorts before '0'; this range uses
+            # the primary-key index and avoids LIKE wildcard/Unicode ambiguity.
+            query = "SELECT relative FROM targets WHERE full >= ? AND full < ? ORDER BY full"
+            if first_conflict_only:
+                query += " LIMIT 1"
+            rows = self.database.execute(query, (path + "/", path + "0"))
+            conflicts = [{"path": item[0], "reason": f"Remote path '{path}' is a file, but this upload needs it as a folder."} for item in rows]
+        return exact, conflicts
+
+
+def validate_upload_paths(args, api, index):
+    # No entry cap: every included local path is checked against the current
+    # remote tree. Remote/local changes after this check remain possible.
+    for entry in api.list_repo_tree(repo_id=args.repo, repo_type=args.type, path_in_repo=None, recursive=True):
+        _, conflicts = index.observe(entry, first_conflict_only=True)
+        if conflicts:
+            conflict = conflicts[0]
+            raise ValueError(f"Cannot upload '{conflict['path']}': {conflict['reason']} Choose another destination or resolve the remote path conflict.")
+
+
+def compare_paths(args, api, *, entry_limit=100000):
+    """Compare names/types only; incomplete listings never prove missing paths."""
     requested = list(args.file)
     if args.manifest:
         with open(args.manifest, "r", encoding="utf-8") as manifest:
@@ -264,31 +310,30 @@ def compare_paths(args, api, *, entry_limit=100000):
     if any(not isinstance(path, str) or not path or path.startswith("/") or path.endswith("/") for path in requested):
         raise ValueError("Comparison paths must be nonempty relative file paths.")
     requested = {remote_path(path) for path in requested}
-    destination = remote_path(args.destination)
-    prefix = destination + "/" if destination else ""
-    targets = {prefix + path: path for path in requested}
     found = set()
-    if not targets:
-        return {"paths": [], "complete": True}
-    visited = 0
-    try:
-        for entry in api.list_repo_tree(repo_id=args.repo, repo_type=args.type,
-                                        path_in_repo=destination or None, recursive=True):
-            visited += 1
-            if entry.path in targets:
-                found.add(targets[entry.path])
-            if len(found) == len(targets):
-                return {"paths": sorted(found), "complete": True}
+    conflicts = {}
+    def result(complete):
+        return {"paths": sorted(found), "conflicts": [{"path": path, "reason": conflicts[path]} for path in sorted(conflicts)], "complete": complete}
+    if not requested:
+        return result(True)
+    with contextlib.closing(sqlite3.connect(":memory:")) as database:
+        index = PathIndex(database, args.destination)
+        for path in requested:
+            index.add(path)
+        # Start at repo root to detect files occupying destination ancestors.
+        # A missing destination is simply absent from an existing repo tree.
+        for visited, entry in enumerate(api.list_repo_tree(repo_id=args.repo, repo_type=args.type,
+                                                           path_in_repo=None, recursive=True), start=1):
+            exact, matches = index.observe(entry)
+            if exact is not None:
+                found.add(exact)
+            for conflict in matches:
+                conflicts[conflict["path"]] = conflict["reason"]
+            if requested <= found | conflicts.keys():
+                return result(True)
             if visited >= entry_limit:
-                return {"paths": sorted(found), "complete": False}
-    except Exception as error:
-        if not destination or visited:
-            raise
-        from huggingface_hub.errors import EntryNotFoundError
-        if not isinstance(error, EntryNotFoundError):
-            raise
-        return {"paths": [], "complete": True}
-    return {"paths": sorted(found), "complete": True}
+                return result(False)
+    return result(True)
 
 
 def execute(args, api) -> None:

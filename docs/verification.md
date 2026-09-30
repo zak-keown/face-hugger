@@ -47,3 +47,15 @@ A synthetic queued source was moved locally. Starting that job failed local vali
 New automated checks cover conservative recovery classification, comparison limits, relative paths and manifests, missing destinations versus authentication/network errors, and bounded/redacted CLI failure output. Network/authentication recovery was checked with controlled test errors, not by disrupting the machine's network or expiring real credentials.
 
 Final follow-up totals: 19 Swift tests and 41 Python tests pass; the system Python run skips one SDK parity check, while the managed runtime passes all 41. The native Debug build succeeds.
+
+## Bounded reliability and beta pass
+
+The final local harness scanned 10,000 files (320,000 source bytes) in 1.177 seconds with 28.06 MiB worker peak RSS, retaining 2,000 preview rows. A 100,000-entry comparison stopped honestly at its cap. Eight real subprocess SIGTERM/restart cycles and a final successful checkpoint run passed with no child or temporary-fixture leak. Controlled SDK connection, timeout, permission, and partial-listing failures propagated. These timings are a single run under concurrent builds, not performance guarantees or a prolonged-outage test.
+
+A fresh live run created one private model and one public dataset, passed filtered uploads, replacement/deletion, Unicode paths and hashes, then interrupted a real 64 MiB upload after observed pipeline progress and resumed to a matching download hash. Both repositories were deleted and verified absent (ledger `/private/tmp/face-hugger-e2e-run-i01k4cfz/ledger.json`). No partial-byte reuse claim is made.
+
+Native read-only inspection verified both conflict directions: local file versus remote folder, and local nested file beneath a remote file. Both rows showed Path conflict and disabled upload. Tests also verify a conflict beyond the 2,000-row preview prevents CLI launch.
+
+First-run setup was exercised in an isolated temporary support directory with system uv lookup disabled: official archive download, checksum verification, extraction, cached reuse, Python 3.12 environment creation, and pinned HF import all passed; temporary setup files were removed. The existing user runtime was preserved.
+
+The suite now includes 19 Swift tests and 49 Python tests. All Python tests pass in the managed runtime; system Python skips three SDK-dependent checks. Universal Release packaging verifies arm64/x86_64 slices, code signatures, disk-image integrity, mounted contents, and the Applications link.

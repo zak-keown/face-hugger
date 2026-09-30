@@ -161,7 +161,7 @@ struct MainView: View {
                     TableColumn("Status") { file in
                         Text(model.fileStatus(file)).font(BenchTheme.metadata)
                             .foregroundStyle(file.included && model.comparison?.paths.contains(file.path) == true ? BenchTheme.pathMatch : BenchTheme.secondary)
-                            .help("Path comparison only. File contents have not been compared.")
+                            .help(model.comparison?.conflicts.first(where: { $0.path == file.path })?.reason ?? "Path comparison only. File contents have not been compared.")
                     }.width(125)
                     TableColumn("Size") { file in Text(ByteCountFormatter.string(fromByteCount: file.size, countStyle: .file)).font(.system(size: 12)).monospacedDigit().foregroundStyle(BenchTheme.secondary) }.width(80)
                 }.tableStyle(.inset(alternatesRowBackgrounds: false)).scrollContentBackground(.hidden)
@@ -226,7 +226,7 @@ struct MainView: View {
         if model.staging != nil && model.currentRepo != nil {
             HStack(spacing: 10) {
                 if model.comparing { ProgressView().controlSize(.small) }
-                Text(model.comparing ? "Checking remote paths…" : model.comparisonError != nil ? "Remote paths couldn’t be checked." : model.comparison?.complete == false ? "Remote check reached its limit. Some paths remain unchecked." : "Path check covers previewed files only. Contents have not been compared.")
+                Text(model.comparison?.conflicts.isEmpty == false ? "File/folder conflicts found. Choose another destination or resolve the remote paths before uploading." : model.comparing ? "Checking remote paths…" : model.comparisonError != nil ? "Remote paths couldn’t be checked." : model.comparison?.complete == false ? "Remote check reached its limit. Some paths remain unchecked." : "Path check covers previewed files only. Contents have not been compared.")
                     .font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary)
                 Spacer()
                 if model.comparisonError != nil {
@@ -263,7 +263,7 @@ struct MainView: View {
             }.padding(.horizontal, 24).frame(height: 76)
         }.background(BenchTheme.remote)
     }
-    private var canUpload: Bool { model.runtimeReady && !model.scanning && !model.submitting && model.currentRepo != nil && (model.staging?.includedCount ?? 0) > 0 }
+    private var canUpload: Bool { model.runtimeReady && !model.scanning && !model.submitting && model.comparison?.conflicts.isEmpty != false && model.currentRepo != nil && (model.staging?.includedCount ?? 0) > 0 }
     private var summary: String {
         if model.scanning { return "Preparing folder…" }
         guard let result = model.staging else { return "No files prepared" }

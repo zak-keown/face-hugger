@@ -97,7 +97,10 @@ class BridgeTests(unittest.TestCase):
         with patch.object(bridge, "upload_command", return_value=["unused"]), patch.object(bridge.subprocess, "Popen") as spawn:
             with self.assertRaisesRegex(ValueError, "outside"):
                 bridge.upload(args, api)
-            self.scanner.assert_called_once_with(args, row_limit=0)
+            self.scanner.assert_called_once()
+            self.assertEqual(self.scanner.call_args.args, (args,))
+            self.assertEqual(self.scanner.call_args.kwargs["row_limit"], 0)
+            self.assertTrue(callable(self.scanner.call_args.kwargs["included_callback"]))
             api.repo_info.assert_not_called()
             spawn.assert_not_called()
 

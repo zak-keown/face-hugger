@@ -21,33 +21,37 @@ Progress is honest: the app displays the CLI’s reported preparation, upload/re
 
 ## Build and run
 
-You need macOS 15+, Xcode with Swift 6 support, [XcodeGen](https://github.com/yonaskolb/XcodeGen), and [uv](https://docs.astral.sh/uv/getting-started/installation/).
+You need macOS 15+, Xcode with Swift 6 support, and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
-brew install xcodegen uv
+brew install xcodegen
 xcodegen generate
 xcodebuild -project FaceHugger.xcodeproj -scheme FaceHugger \
   -configuration Debug -derivedDataPath .build/xcode build CODE_SIGN_IDENTITY=-
 open ".build/xcode/Build/Products/Debug/Face Hugger.app"
 ```
 
-In **Settings**, choose **Set up upload tools**. This installs Python 3.12 and the pinned Hugging Face runtime into an isolated environment under `~/Library/Application Support/Face Hugger/`. Setup needs an internet connection; the app currently looks for `uv` in `/opt/homebrew/bin`, `/usr/local/bin`, or `~/.local/bin`.
+In **Settings**, choose **Set up upload tools**. This installs Python 3.12 and the pinned Hugging Face runtime into an isolated environment under `~/Library/Application Support/Face Hugger/`. Setup needs an internet connection. It uses an existing `uv` when available, otherwise downloads pinned uv 0.12.18 from its official GitHub release and verifies its SHA-256 before execution. No Homebrew or terminal setup is required in the packaged app.
 
 Connect with a Hugging Face token that can write to your destination repository. Leaving the token blank uses the existing CLI login, if available. Removing the saved app account does not log you out of the separate HF CLI.
 
-Create or select a repository, choose a local folder, review its destination and filters, then **Upload now** or **Add to queue**. Matching remote paths may be replaced. Other remote files are retained. An upload requires an existing repository; repository creation has an explicit visibility choice.
+Create or select a repository, choose a local folder, review its destination and filters, then **Upload** or **Add to queue**. Matching remote paths may be replaced. Other remote files are retained. An upload requires an existing repository; repository creation has an explicit visibility choice.
 
 Closing the window leaves the app and its uploads running in the menu bar. Quitting asks to stop an active upload first. Stopping does not undo files already committed. Resume reruns the job and lets HF reuse previously uploaded content.
 
 ## Current limits
 
-- The upload runtime is installed on first use; it is not bundled. There is no signed, notarized release installer yet.
+- The upload runtime is installed on first use; it is not bundled. See [beta packaging](docs/releasing.md) for universal DMG builds and signing/notarization.
 - Uploads run while the app is running. There is no launch agent, scheduled upload service, or upload while the Mac is asleep.
 - A failed upload stops the queue. Resume or restart it when you are ready.
 - Logs are bounded and session-only. Queue metadata and completed-job history are saved locally.
 - Source folders remain live: jobs store a path, not a snapshot. Changing files between attempts changes what the resumed job uploads.
 - Repository management covers models and datasets, browsing, creation, and individual file deletion. It does not include Spaces, branches, file moves, card editing, or whole-repository deletion.
 - Default automated tests use mocks and local subprocesses; they do not upload to or mutate your repositories. An opt-in live test exercises real uploads and repository operations with temporary synthetic data.
+
+## Developer beta packaging
+
+`Scripts/package-beta.sh` builds a universal Release app and a drag-to-Applications DMG in `dist/beta`, with a SHA-256 checksum. Ad-hoc builds are explicitly labeled; a Developer ID identity plus a notarization profile or configured `asc` authentication produces a notarized package. See [release instructions](docs/releasing.md).
 
 ## Checks
 
@@ -78,3 +82,5 @@ This explicitly creates a temporary **private model** and **public dataset** in 
 The runtime pins `huggingface_hub==2.0.0` and invokes `hf upload`. Current Hugging Face supports large, resumable folder uploads through that command; the old `upload-large-folder` command has been removed in 2.0. See the official [upload guide](https://huggingface.co/docs/huggingface_hub/guides/upload) and [CLI reference](https://huggingface.co/docs/huggingface_hub/package_reference/cli).
 
 Face Hugger is an independent project, not an official Hugging Face application.
+
+For bounded local stress checks, run the managed Python with `Scripts/reliability.py`. It scans 10,000 tiny files, exercises comparison limits, and runs repeated process interruption/restart fixtures. Injected connection failures do not represent a prolonged real network outage.

@@ -18,7 +18,7 @@ The Swift package builds the independently testable core. XcodeGen’s `project.
 
 ## Runtime and credentials
 
-Setup locates `uv`, creates an isolated Python 3.12 environment, and installs the pinned requirements. The app uses `~/Library/Application Support/Face Hugger/runtime/bin/python3`. A readiness marker is written after successful setup; an incomplete environment is not considered ready.
+Setup locates `uv` or downloads a pinned official release with SHA-256 verification, then creates an isolated Python 3.12 environment, and installs the pinned requirements. The app uses `~/Library/Application Support/Face Hugger/runtime/bin/python3`. A readiness marker is written after successful setup; an incomplete environment is not considered ready.
 
 The app stores its optional token in the macOS Keychain under service `dev.zakkeown.FaceHugger`, account `huggingface`. It passes that token in `HF_TOKEN`, never as a command-line argument or in the queue archive. With no app token, Hugging Face can use the existing CLI login. Removing the saved app account only removes the app’s Keychain item.
 
@@ -109,8 +109,10 @@ Saved pairings persist atomically in `pairings.json` beside the queue. They stor
 
 ## Path status and recovery
 
-The `compare` command accepts a temporary JSON manifest of up to 2,000 staged paths and recursively streams remote entries under the destination, stopping at 100,000 entries or when all requested paths are found. It returns matching relative paths and a completeness flag. Only a complete result establishes a new path; failures and incomplete listings retain “Not checked.” Exact paths are compared, not bytes, hashes, or ancestor-path conflicts. Refresh before acting on remotely changed content; this is an advisory snapshot, not a transaction.
+The `compare` command accepts a temporary JSON manifest of up to 2,000 staged paths and recursively streams remote entries under the destination, stopping at 100,000 entries or when all requested paths are found. It returns matching relative paths and a completeness flag. Only a complete result establishes a new path; failures and incomplete listings retain “Not checked.” Paths and types are compared, including files blocking destination ancestors and remote directories occupying local file paths. Contents and hashes are not compared. Refresh before acting on remotely changed content; this is an advisory snapshot, not a transaction.
 
 Comparison processes are cancelled and generation-guarded when the source, filters, repository, or destination changes. Temporary manifests are removed after the request. No local contents are uploaded for comparison.
 
 Failed CLI exits retain a bounded, redacted tail of output in the persisted job message. Conservative recovery hints suggest account settings or network checks; unknown failures stay generic. Missing source folders offer a native locator. Locating replaces that job's source, clears stale progress, prepares its source/filter/destination workspace, and leaves the job stopped. It never starts a transfer. Remote browser failures remain visibly distinct from empty directories.
+
+Before CLI launch, every included source path is indexed in temporary SQLite storage and checked against the full remote tree. This preflight is not limited by the 2,000 preview rows or 100,000 preview listing cap. Conflicts fail before upload; source or remote changes after preflight remain possible.

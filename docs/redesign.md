@@ -31,7 +31,7 @@ The shelf's Transfers popover holds queue/history selection, ordering, removal, 
 
 Adaptive source/remote colors support light and dark system appearance; the activity shelf stays dark in both. The native window uses SF Pro, native tables and menus, a small identity mascot, and gold directional/primary-action accents. The two panes expand with the window but do not have a draggable divider. The prototype's external state selector and appearance switch are not native app controls.
 
-Ancestor-path conflicts, content-equality checks, automatic synchronization, retained session logs/counters, and selecting uploaded files after completion are not implemented. Local/remote header and row alignment, filter-empty feedback, and explicit accessibility labels should be verified in native UI review rather than inferred from the prototype.
+Content-equality checks, automatic synchronization, retained session logs/counters, and selecting uploaded files after completion are not implemented. Local/remote header and row alignment, filter-empty feedback, and explicit accessibility labels should be verified in native UI review rather than inferred from the prototype.
 
 ## Design history and verification
 
@@ -41,4 +41,4 @@ Prototype revision 5 was inspected in Safari in light and dark appearance. Its C
 
 The native redesign builds successfully. Prototype interaction checks are not evidence of native end-to-end validation; current test and live-smoke evidence belongs in [verification.md](verification.md). Validation can use small synthetic trees, many-file fixtures, controlled subprocesses, and bounded interrupted uploads. Multi-terabyte disk capacity is not a prerequisite.
 
-File-status follow-up: the native local table now shows New path, Remote path exists, Excluded, or Not checked. This compares previewed paths only, without content equality or ancestor-conflict claims. Missing-source jobs support Locate folder and manual resume; likely account/network failures show recovery guidance.
+File-status follow-up: the native local table now shows New path, Remote path exists, Excluded, or Not checked. This compares previewed paths only, without content-equality claims. Missing-source jobs support Locate folder and manual resume; likely account/network failures show recovery guidance.

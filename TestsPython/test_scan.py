@@ -127,7 +127,9 @@ class ScanTests(unittest.TestCase):
             return real_scan(args, filter_objects=test_filter, default_ignores=DEFAULT_IGNORES, **kwargs)
         bridge._STOPPING = False
         with patch.object(bridge, '_PROTOCOL', io.StringIO()), patch.object(bridge, 'scan_folder', side_effect=scan) as scanner, patch.object(bridge, 'upload_command', return_value=[sys.executable, '-c', 'pass']):
-            bridge.upload(args, Mock())
+            api = Mock()
+            api.list_repo_tree.return_value = []
+            bridge.upload(args, api)
             with tempfile.TemporaryDirectory() as outside:
                 target = Path(outside) / 'private.bin'
                 target.write_bytes(b'synthetic')
@@ -137,6 +139,23 @@ class ScanTests(unittest.TestCase):
                         bridge.upload(args, Mock())
                     spawn.assert_not_called()
             self.assertEqual(scanner.call_count, 2)
+
+    def test_upload_blocks_conflict_beyond_preview_rows_before_cli_launch(self):
+        for number in range(2003):
+            self.file(f'{number:04}.bin', b'x')
+        args = bridge.parser().parse_args(['upload', '--repo', 'alice/model', '--source', str(self.root), '--destination', 'dest'])
+        real_scan = bridge.scan_folder
+        def scan(args, **kwargs):
+            return real_scan(args, filter_objects=test_filter, default_ignores=DEFAULT_IGNORES, **kwargs)
+        remote_folder = type('RepoFolder', (), {})()
+        remote_folder.path = 'dest/2002.bin'
+        api = Mock()
+        api.list_repo_tree.return_value = iter([remote_folder])
+        bridge._STOPPING = False
+        with patch.object(bridge, '_PROTOCOL', io.StringIO()), patch.object(bridge, 'scan_folder', side_effect=scan), patch.object(bridge, 'upload_command', return_value=['unused']), patch.object(bridge.subprocess, 'Popen') as spawn:
+            with self.assertRaisesRegex(ValueError, '2002.bin'):
+                bridge.upload(args, api)
+            spawn.assert_not_called()
 
     def test_official_sdk_filter_when_installed(self):
         try:

@@ -1,82 +1,19 @@
 import AppKit
 import SwiftUI
 
-struct UploadSheet: View {
-    @Bindable var model: AppModel
-    @Environment(\.dismiss) private var dismiss
-    @State private var repoName = ""
-    @State private var kind: RepoKind = .model
-    @State private var destination = ""
-    @State private var includes = ""
-    @State private var excludes = ".DS_Store\n**/.DS_Store"
-    @State private var validation: String?
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(spacing: 12) {
-                Image("Hugger").resizable().scaledToFit().frame(width: 56, height: 56)
-                VStack(alignment: .leading, spacing: 4) { Text("New upload").font(.title2.weight(.semibold)); Text("Give your files a home on Hugging Face.").foregroundStyle(.secondary) }
-            }
-            Form {
-                Section("Local folder") {
-                    HStack { Text(model.draftSource.isEmpty ? "Choose a folder" : model.draftSource).lineLimit(2).textSelection(.enabled); Spacer(); Button("Choose…") { model.chooseFolder() } }
-                }
-                Section("Destination") {
-                    TextField("Repository", text: $repoName, prompt: Text("username/my-model"))
-                    if !model.repos.isEmpty {
-                        Picker("Recent repositories", selection: $repoName) {
-                            Text("Choose a repository").tag("")
-                            ForEach(model.repos) { Text($0.name + " (\($0.kind.rawValue))").tag($0.name) }
-                        }.onChange(of: repoName) { _, name in if let repo = model.repos.first(where: { $0.name == name }) { kind = repo.kind } }
-                    }
-                    Picker("Type", selection: $kind) { Text("Model").tag(RepoKind.model); Text("Dataset").tag(RepoKind.dataset) }
-                    TextField("Folder in repo", text: $destination, prompt: Text("Root of repository"))
-                }
-                Section("File filters") {
-                    TextField("Include patterns", text: $includes, prompt: Text("All files"), axis: .vertical).lineLimit(1...3)
-                    TextField("Exclude patterns", text: $excludes, axis: .vertical).lineLimit(2...4)
-                    Text(verbatim: "One glob pattern per line. Example: *.safetensors or **/logs/**. Hugging Face also applies its ignore rules.").font(.caption).foregroundStyle(.secondary)
-                }
-                Section {
-                    Label("Matching remote paths may be replaced.", systemImage: "info.circle")
-                    Text("Other remote files stay in place. Large uploads may become visible in several commits. The repository must already exist; create one from the sidebar to choose its visibility.").font(.caption).foregroundStyle(.secondary)
-                }
-            }.formStyle(.grouped)
-            if let validation { Text(validation).foregroundStyle(.red).font(.callout) }
-            ErrorBanner(model: model)
-            HStack {
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Spacer()
-                Button("Add to queue") { submit(start: false) }
-                Button("Upload now") { submit(start: true) }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
-            }
-        }.padding(24).frame(width: 600, height: 710)
-        .onAppear { if let repo = model.currentRepo { repoName = repo.name; kind = repo.kind; destination = model.remotePath } }
-    }
-    private func patterns(_ text: String) -> [String] { text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
-    private func submit(start: Bool) {
-        let name = repoName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let path = destination.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let problem = UploadValidation.error(source: model.draftSource, repo: name, destination: path) { validation = problem; return }
-        guard model.runtimeReady else { validation = "Set up upload tools in Settings first."; return }
-        let selectedRepo = model.currentRepo.flatMap { $0.name == name && $0.kind == kind ? $0 : nil }
-        let repo = model.repos.first { $0.name == name && $0.kind == kind } ?? selectedRepo ?? HubRepo(name: name, kind: kind)
-        model.addJob(UploadJob(source: model.draftSource, repo: repo, destination: path, includes: patterns(includes), excludes: patterns(excludes)), start: start)
-        dismiss()
-    }
-}
-
 struct SettingsSheet: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @State private var token = ""
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Make yourself at home.").font(.title2.weight(.semibold))
+            Text("Account and upload tools").font(.title2.weight(.semibold))
             Form {
                 Section("Upload tools") {
+                    Text("One-time setup downloads Python and Hugging Face tools. An internet connection is required; no terminal setup is needed.").font(.system(size: 12)).foregroundStyle(.secondary)
                     Label(model.runtimeReady ? "Hugging Face tools are ready" : "Set up Hugging Face tools", systemImage: model.runtimeReady ? "checkmark.circle.fill" : "shippingbox")
                     Text("Face Hugger uses an isolated Python environment for the official Hugging Face CLI. Setup requires uv and an internet connection.").font(.caption).foregroundStyle(.secondary)
-                    HStack { Button(model.runtimeReady ? "Repair upload tools" : "Set up upload tools") { Task { await model.installRuntime() } }.disabled(model.installing || model.activeJob != nil); if model.installing { ProgressView().controlSize(.small) }; Link("Get uv", destination: URL(string: "https://docs.astral.sh/uv/getting-started/installation/")!) }
+                    HStack { Button(model.runtimeReady ? "Repair upload tools" : "Set up upload tools") { Task { await model.installRuntime() } }.disabled(model.installing || model.activeJob != nil); if model.installing { ProgressView().controlSize(.small) } }
                     if !model.setupLog.isEmpty {
                         ScrollView { Text(model.setupLog).font(.system(.caption, design: .monospaced)).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled) }.frame(height: 90)
                     }

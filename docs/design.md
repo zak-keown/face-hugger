@@ -8,7 +8,7 @@ See the [interactive Transfer Bench prototype](https://p.superdesign.dev/draft/3
 
 Two aligned file surfaces connect **On this Mac** to **On Hugging Face**. A small gold directional element joins their headers; a continuous slate activity shelf anchors both panes. No permanent sidebar, card grid, or separate inspector. Keep the approved mascot at a small identity scale rather than above an empty-state slogan.
 
-Drop or choose a folder to stage its contents in place. A searchable repository selector updates the remote pane. Filters open on demand. The repository header identifies visibility; a review strip shows measured file totals, destination-folder controls, and a general matching-path replacement warning before an explicit Upload action. Per-file status compares exact remote paths; it does not compare contents or detect ancestor conflicts. Starting a transfer moves its activity into the shelf while browsing remains available.
+Drop or choose a folder to stage its contents in place. A searchable repository selector updates the remote pane. Filters open on demand. The repository header identifies visibility; a review strip shows measured file totals, destination-folder controls, and a general matching-path replacement warning before an explicit Upload action. Per-file status compares exact remote paths; it detects file/folder conflicts but does not compare contents. Starting a transfer moves its activity into the shelf while browsing remains available.
 
 Saved pairings live in a compact toolbar popover. Choosing one restores both endpoints and filters, never starts a transfer, and must not silently discard unsent work. History and logs belong with the activity shelf. Pairings do not imply automatic synchronization.
 
@@ -42,4 +42,4 @@ The table records the shared adaptive theme. The current activity shelf uses its
 
 The master artwork is `Resources/Artwork/face-hugger-master.png`, generated with the built-in imagegen tool. `Scripts/Art/build_assets.swift` mechanically resizes it, preserving transparency, and packages the icon on a pale native rounded tile. Run `swift Scripts/Art/build_assets.swift` to regenerate all sizes. Generation prompt is recorded in `Resources/Artwork/prompt.txt`.
 
-File-status follow-up: the native local table now shows New path, Remote path exists, Excluded, or Not checked. This compares previewed paths only, without content equality or ancestor-conflict claims. Missing-source jobs support Locate folder and manual resume; likely account/network failures show recovery guidance.
+File-status follow-up: the native local table now shows New path, Remote path exists, Excluded, or Not checked. This compares previewed paths only, without content-equality claims. Missing-source jobs support Locate folder and manual resume; likely account/network failures show recovery guidance.

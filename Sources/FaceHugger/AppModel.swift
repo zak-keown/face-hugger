@@ -194,6 +194,7 @@ final class AppModel {
     func fileStatus(_ file: StagedFile) -> String {
         if !file.included { return "Excluded" }
         if comparing { return "Checking…" }
+        if comparison?.conflicts.contains(where: { $0.path == file.path }) == true { return "Path conflict" }
         guard let comparison else { return "Not checked" }
         if comparison.paths.contains(file.path) { return "Remote path exists" }
         return comparison.complete ? "New path" : "Not checked"
@@ -242,7 +243,7 @@ final class AppModel {
         do { try pairingArchive.save(updated); pairings = updated } catch { self.error = error.localizedDescription }
     }
     func submitStaged(start: Bool) async {
-        guard !submitting, !scanning, let staging, staging.includedCount > 0, let repo = currentRepo else { return }
+        guard !submitting, !scanning, comparison?.conflicts.isEmpty != false, let staging, staging.includedCount > 0, let repo = currentRepo else { return }
         let source = draftSource, destination = remotePath, includes = draftIncludes, excludes = draftExcludes
         let scan = scanGeneration, selection = selectionGeneration
         if let problem = UploadValidation.error(source: source, repo: repo.name, destination: destination) { error = problem; return }
@@ -251,7 +252,7 @@ final class AppModel {
             let fresh: RepoResponse = try await HubService.request(["info", "--repo", repo.name, "--type", repo.kind.rawValue], token: token)
             guard source == draftSource, destination == remotePath, repo.id == currentRepo?.id,
                   includes == draftIncludes, excludes == draftExcludes, scan == scanGeneration,
-                  selection == selectionGeneration, !scanning else { return }
+                  selection == selectionGeneration, !scanning, comparison?.conflicts.isEmpty != false else { return }
             guard fresh.repo.isPrivate == repo.isPrivate else {
                 currentRepo = fresh.repo
                 error = "Repository visibility changed to \(fresh.repo.isPrivate ? "Private" : "Public"). Review the destination and upload again."; return
@@ -350,12 +351,12 @@ final class AppModel {
         runNext()
     }
     func installRuntime() async {
-        guard !installing else { return }
-        let uv = ["/opt/homebrew/bin/uv", "/usr/local/bin/uv", NSHomeDirectory() + "/.local/bin/uv"].first { FileManager.default.isExecutableFile(atPath: $0) }
-        guard let uv else { error = "Install uv from astral.sh/uv, then choose Set up upload tools again."; return }
+        guard !installing, activeJob == nil else { return }
         guard let requirements = Bundle.main.url(forResource: "requirements", withExtension: "txt") else { error = "The app is missing its upload tool requirements."; return }
         installing = true; setupLog = "Setting up upload tools…"; defer { installing = false }
         do {
+            setupLog += "\nPreparing setup tools; downloading from Astral if needed…"
+            let uv = try await RuntimeBootstrap.prepare(in: AppPaths.support)
             runtimeReady = false
             if FileManager.default.fileExists(atPath: AppPaths.runtimeMarker.path) { try FileManager.default.removeItem(at: AppPaths.runtimeMarker) }
             try FileManager.default.createDirectory(at: AppPaths.support, withIntermediateDirectories: true)
