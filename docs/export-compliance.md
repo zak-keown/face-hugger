@@ -1,5 +1,7 @@
 # Encryption preparation — September 30, 2026
 
+**Current direction:** owner paused the filing path in favor of Apple-native networking. The [native transport proof](../Experiments/NativeTransport/README.md) passed a real 16 MiB multipart upload/download with only Apple networking/hashing in the transfer executable. Production build 3 is unchanged and still contains third-party crypto; its existing answers remain accurate. Do not treat the experiment as clearance for that build.
+
 An encryption declaration was created in ASC on September 30, 2026: `deb48a27-898e-44dc-8da5-77c2cf681899`. It records third-party cryptography, no proprietary algorithms, and France availability. Apple returned `exempt: false`, state `CREATED`. Build 3 now has `usesNonExemptEncryption: true`. No supporting document or approval code exists yet.
 
 The assignment command returned success, but readback still showed no linked builds and validation reports a missing declaration. Do not describe this as approved or successfully associated until verified. See [encryption.json](../AppStore/encryption.json).
