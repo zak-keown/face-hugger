@@ -33,9 +33,17 @@ The original Developer ID-notarized direct beta `dist/beta/FaceHugger-0.1.0-beta
 ## Resume
 
 1. Inspect Git and latest ASC validation; preserve unrelated changes.
-2. Finish actual Store screenshots. Native Screenshot launch failed and Preview capture returned to Open; no PNG exported. Manual Shift–Command–5 capture steps are in AppStore/screenshots/README.md. Never manufacture transfer statistics or expose credentials.
+2. Screenshots are complete: four 2560 × 1600 assets uploaded and processed COMPLETE. The capture record is in AppStore/screenshots/README.md. Preserve untouched originals and checksums.
 3. Resolve [export compliance](export-compliance.md), including the bundled TLS implementation and approved France availability. No exemption declaration was inferred.
 4. Complete remaining dependency obligations and clean-machine/Intel/Store recovery verification. Do not claim multi-terabyte testing; owner lacks that disk capacity.
 5. Rebuild with a new build number if package resources/code change, upload/attach, validate, then seek explicit submission approval. Preparation is authorized; submission/release has not been requested.
 
 The user approved subagents and test repos with cleanup; the review repo is the explicit persistent exception. Preserve the approved paired-surface/slate-shelf design and friendly facehugger artwork.
+
+## Screenshot and encryption follow-up
+
+Owner approved the revised icon, continued screenshots/compliance work, and explicitly authorized macOS `screencapture` after the native Screenshot UI failed. Four real Store build 3 screenshots are uploaded and processed COMPLETE, and retained under `AppStore/screenshots/1.0-build3`, including an actual four-file upload using restricted review access. The review repository/token remain intentionally available through review.
+
+Build 3 `usesNonExemptEncryption=true`. Declaration `deb48a27-898e-44dc-8da5-77c2cf681899`: third-party cryptography yes, proprietary no, France yes; state CREATED. CLI assignment reported success but readback contained no builds. Browser explicitly requires a French encryption declaration approval form and disables Save until one is supplied; its incomplete API-created row displays Upload Failed. Do not represent the drafts as approval.
+
+Owner requested preparation of French filing materials, preserving France availability. `output/pdf/` contains a visually verified three-page worksheet, six-page technical attachment, and unchanged official dynamic XFA PDF. Editable sources live in `docs/encryption-filing-worksheet.md` and `docs/encryption-technical-description.md`. Identity/address/nationality, signature, operation/classification and required supporting evidence need owner completion. Nothing was sent to ANSSI.

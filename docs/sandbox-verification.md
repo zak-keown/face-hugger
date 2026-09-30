@@ -49,3 +49,7 @@ The harness's `finally` cleanup deleted the repository, verified it no longer ex
 For the live integration check, run the managed Python with `Scripts/sandbox_upload_smoke.py --run-live`, then select the dedicated fixture in the probe's native picker. This opt-in mode creates a private repository, uploads synthetic files, verifies downloads, and performs cleanup automatically. It requires an existing HF credential with repository write access. The local-only selection/restoration mode makes no HF requests.
 
 These checks establish source access across relaunch and a small authenticated upload through the sandboxed subprocess chain. They do not establish sandbox stop/resume or network-outage recovery, Intel execution, full Store-app account flows, Mac App Store acceptance, or future runtime behavior. Those require separate qualification.
+
+## Store UI upload during screenshot preparation
+
+On September 30, the development-signed Store 1.0 (3) UI selected a real harmless dataset fixture, applied `logs/**`, uploaded four files totaling 508 bytes through the restricted App Review credential, and displayed Upload complete with the remote files visible. The four screenshots under `AppStore/screenshots/1.0-build3` retain this real UI evidence. This extends the earlier probe with an actual app UI upload; it is still not a stop/resume, outage, Intel, or large-volume claim. Review repository/token and harmless review sample remain available through review.

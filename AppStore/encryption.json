@@ -1,0 +1,21 @@
+{
+  "declarationId": "deb48a27-898e-44dc-8da5-77c2cf681899",
+  "buildId": "d2ccd249-8a5f-4e4b-a36d-c0386cdc296b",
+  "usesNonExemptEncryption": true,
+  "appDescription": "macOS client for Hugging Face repository browsing and file uploads over HTTPS/TLS. Bundles CPython 3.12.14/OpenSSL 3.5.8 and HF/Xet third-party TLS dependencies. No proprietary cryptographic algorithms. Available in France.",
+  "createdDate": "2026-09-30T11:47:53.5396295-07:00",
+  "exempt": false,
+  "containsProprietaryCryptography": false,
+  "containsThirdPartyCryptography": true,
+  "availableOnFrenchStore": true,
+  "platform": "osx",
+  "uploadedDate": "2026-09-30T11:47:53.5396295-07:00",
+  "appEncryptionDeclarationState": "CREATED",
+  "documentUploaded": false,
+  "assignmentCommandSucceeded": true,
+  "assignmentReadbackVerified": false,
+  "nextStep": "Required documentation and Apple encryption review; CREATED is not approval.",
+  "browserRequiredDocument": "French encryption declaration approval form",
+  "browserDisplayStatus": "Upload Failed (no document attached)",
+  "filingMaterialsPrepared": true
+}

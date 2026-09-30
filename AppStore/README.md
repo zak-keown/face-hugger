@@ -14,8 +14,8 @@
 
 ## Remaining release work
 
-1. **Final screenshots:** capture actual Store UI states, verify dimensions, then upload. Native Screenshot and Preview capture failed to export images in this session; [capture plan](screenshots/README.md) records the manual route.
-2. **Export compliance:** complete Apple's encryption questionnaire and any required documentation. The runtime contains OpenSSL and third-party TLS, so it is not limited to OS-provided encryption. France is included in the approved territories. See [technical inventory and next steps](../docs/export-compliance.md); no exemption was asserted.
+1. **Screenshots complete:** four genuine Store 1.0 (3) screenshots at 2560 × 1600 are uploaded and processed COMPLETE. See the [capture record](screenshots/README.md).
+2. **Export compliance:** build 3 is marked non-exempt; the factual declaration is created, but Apple requires a French encryption declaration approval form before completion. The owner requested filing preparation; draft PDFs and the untouched official XFA form are in `output/pdf/`. The runtime contains OpenSSL and third-party TLS, so it is not limited to OS-provided encryption. France is included in the approved territories. See [technical inventory and next steps](../docs/export-compliance.md); no exemption was asserted.
 3. **Dependency obligations:** retain and check bundled native dependency notices; see [audit scope](../docs/third-party-notices.md). Collection coverage is not a blanket legal conclusion.
 4. **Release verification:** clean-machine installation, full Store UI upload/stop/resume and outage recovery, and Intel execution. Intel slices pass structural checks but have not run on this Mac. No multi-terabyte claim is made.
 5. Check account-level agreements and territory-specific requirements in ASC before submission, then obtain release-owner approval to submit.

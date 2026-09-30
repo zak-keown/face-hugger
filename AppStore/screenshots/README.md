@@ -1,41 +1,22 @@
-# Screenshot plan — pending the final Store build
+# Store screenshots — 1.0 (3)
 
-No screenshots have been uploaded. The current 0.1.0 direct-distribution beta is not the self-contained, sandboxed Store build. Screenshots inspected from that beta are provisional UI evidence only; they must not be submitted as final Store screenshots.
+Four genuine screenshots were captured September 30, 2026 from the development-signed, sandboxed Store build **1.0 (3)** at `.build/store-xcode/Build/Products/Debug/Face Hugger.app`, using the same source and approved icon as the uploaded release build. macOS **27.0.1**, dark appearance. All four were uploaded to the English (U.S.) Mac screenshot set and returned **COMPLETE**.
 
-## Format
+Final opaque PNGs are in [1.0-build3](1.0-build3/); unmodified window captures remain in `1.0-build3/originals/`. Final size is **2560 × 1600**. Captures were centered at their original pixel size on a solid slate background; no scaling, reconstructed UI, fabricated counters, or painted-over content. Native `screencapture -x -o -l` was used after the user explicitly authorized that capture method. Native Screenshot/Preview export attempts had failed; CUA was used for all app interactions.
 
-Apple currently accepts Mac screenshots at **1280 × 800, 1440 × 900, 2560 × 1600, or 2880 × 1800**, all 16:10. Use **2880 × 1800 PNG** as the consistent final capture target, provided the native UI can be captured at that size without stretching. These dimensions are from [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/), checked September 30, 2026.
-
-A listing accepts one to ten screenshots in PNG or JPEG formats. Five strong product views are sufficient for this plan; an app-preview video is optional and is not planned for the first submission. See [Apple's upload guidance](https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots/).
-
-Capture the native app at the intended window geometry and verify output pixel dimensions. Do not stretch a different aspect ratio or reconstruct controls in a design tool. Use the same scale and appearance within a sequence. Do not infer final screenshots from the Superdesign prototype.
-
-## Proposed sequence
-
-| Order | Suggested filename | Actual state to capture | What it demonstrates |
+| Order | File | Genuine state | App Store asset ID |
 | --- | --- | --- | --- |
-| 1 | `01-transfer-bench-light.png` | A prepared local folder and a selected private repository, with real filenames, sizes, and destination visible | Review source and destination together |
-| 2 | `02-file-filters-light.png` | Filters popover over that workspace; real glob patterns and staged included/excluded files | Choose which files to upload |
-| 3 | `03-upload-activity-dark.png` | An actual bounded transfer in progress, with reported preparation/upload/commit counts | Understand ongoing upload activity |
-| 4 | `04-stopped-upload-dark.png` | The same transfer deliberately stopped through the app; last-reported values and Resume action | Stop and resume without pretending to show a live transfer |
-| 5 | `05-saved-pairings-light.png` | Actual saved pairings in the popover, with recognizable source and repository names | Reuse destinations without automatic synchronization |
+| 1 | `01-prepared-workspace.png` | Four included files, one excluded log, selected destination | `9cc00019-6606-8471-800d-24333e3dbde0` |
+| 2 | `02-file-filters.png` | Applied `logs/**` exclusion shown in popover | `0d400019-6606-8471-802e-4dbae70bd926` |
+| 3 | `03-upload-complete.png` | Real 508-byte, four-file upload completed; remote files visible | `6c000019-6606-8471-8026-b512f5d22ac8` |
+| 4 | `04-saved-pairing.png` | Actual saved source/destination pairing | `8ac00019-6606-8471-8019-841d4df42f50` |
 
-A sixth screenshot of real remote folder browsing is optional if it communicates a capability that the first view does not. The empty workspace is useful QA evidence, but should not lead the Store sequence: it does not show the product doing work.
+App `6817866865`, version ID `6302c414-5900-40dd-bb0d-2b886d65496b`, localization `7ce2b112-74b6-458e-8d2c-2d34f08fce38`, screenshot set `cdfea2a3-600d-4df0-9eff-a1cc43296baf` (`APP_DESKTOP`). No App Review submission or release was performed.
 
-## Capture preparation
+## Fixture and retained review state
 
-Use a dedicated, authorized demonstration repository and harmless local fixture files. The files must actually exist and their displayed measurements must come from the app. Clearly distinguish such sample content in the capture record; do not fabricate job counters, a throughput figure, or a completed transfer. Never expose tokens, private user files, or account setup screens containing credentials. No live upload or creation of a demonstration repository was performed during this screenshot-planning pass.
+Harmless demonstration files live under `.build/store-screenshot-fixture/Dataset Preview`: README, dataset metadata, two tiny JSONL files, and an excluded preparation log. The four included files were actually uploaded to `reviewer-test/` in the authorized private review dataset `zakkeown/face-hugger-app-review-89503494`. The repository root README was not changed. These sample files, the local fixture, completed history entry, and saved pairing are intentionally retained for review/reproduction; they are not production data. The review repository and restricted token remain available. Credentials were transferred by native clipboard, never included in images, and replaced on the clipboard afterward.
 
-Before capturing final shots, verify the Store build version matches the listing, its runtime/setup flow is final, and the actual sandboxed source-folder access works. A real store build must provide the demonstrated behavior; a notarized direct beta is a separate artifact. Branding and rights decisions remain with the release owner, as recorded in [the listing handoff](../README.md).
+Apple accepts Mac screenshots at 1280×800, 1440×900, 2560×1600, or 2880×1800; see [screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/). CLI validation and pixel inspection passed. The sample upload was too small to support a useful in-progress capture, so no staged or invented progress/stopped state was added.
 
-For each file, record build version/number, build identity, macOS version, appearance, pixel dimensions, capture time, fixture/repository purpose, and whether any external caption treatment was applied. If captions are later added, keep them outside the captured app and keep an untouched source image. No screenshot imagery should be regenerated or painted over.
-
-## Current inspection
-
-See [direct-beta preview notes](direct-beta-previews/README.md). Two actual CUA screenshots were rendered and inspected inline: the dark empty workspace and the Filters popover. No PNG was successfully exported to this directory. The available CUA screenshot API exposed inline output but no documented file-save operation; a native screenshot workflow was unsuccessful. Do not treat these notes as completed screenshot assets.
-
-Final capture, pixel validation, review, and upload are all still pending. Keep provisional captures under `direct-beta-previews/`; put approved final Store images in a separate versioned directory only after the Store build exists.
-
-## Store 1.0 (2) capture attempt
-
-The actual development-signed Store build opened successfully at `.build/store-xcode/Build/Products/Debug/Face Hugger.app`. Native Screenshot failed to launch (Cocoa/launchd error); Preview → File → Take Screenshot → From Window returned to the Open dialog. No PNG was exported or uploaded. Manual fallback: prepare the actual workspace, press Shift–Command–5, capture the selected app window, save PNG, then verify supported pixel dimensions before upload. Keep account/token settings closed. The UI inspection showed the empty Transfer Bench; this is not a completed marketing shot.
+Earlier direct-beta inspection notes in [direct-beta-previews](direct-beta-previews/README.md) are historical only and were not submitted.
