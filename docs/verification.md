@@ -4,7 +4,7 @@ Tested on Apple silicon with macOS 27, Xcode 27, and the managed Python 3.12 run
 
 ## Automated checks
 
-`Scripts/check.sh` passes 11 Swift tests and 17 Python tests. Coverage includes queue ordering, stop/start races, stale completions, recovery, destination validation, CLI argument handling, progress parsing, token redaction, and real local subprocess termination. The native Debug application also builds with ad-hoc signing.
+`Scripts/check.sh` passes 14 Swift tests and 32 Python tests (one SDK parity test skips under system Python; all 32 pass under the managed runtime). Coverage includes queue ordering, stop/start races, stale completions, recovery, destination validation, CLI argument handling, progress parsing, token redaction, and real local subprocess termination. The native Debug application also builds with ad-hoc signing.
 
 ## Live Hugging Face checks
 
@@ -29,3 +29,11 @@ Testing uncovered and fixed queue cancellation races, delayed repository listing
 All five temporary remote repositories were deleted and their absence verified. Local synthetic upload history and fixture/download directories were removed. No existing user repository was modified.
 
 These checks do not establish multi-terabyte reliability, behavior under prolonged network outages, or quantified partial-byte deduplication. Developer ID signing, notarization, and a self-contained runtime installer remain distribution work.
+
+## Native Transfer Bench follow-up
+
+The implemented two-pane workspace was tested with a 53-byte synthetic folder in a sixth temporary private model repository. The native flow created the repository, selected a previously nonexistent destination subfolder, previewed two files with the correct total size, uploaded successfully, and refreshed the remote listing. Downloaded SHA-256 hashes matched both source files; ignored `.DS_Store` metadata was absent.
+
+A saved pairing survived app restart and restored the local source, private repository, and destination subfolder without starting another upload. The disposable pairing was removed. The test repository was deleted and its absence verified. Layout inspection prompted matched header baselines, table rows, and accessible icon labels.
+
+Automated additions cover saved-pairing persistence, metadata scan limits and filter parity, missing-path handling, and upload-time preflight including changed symlinks on resume.

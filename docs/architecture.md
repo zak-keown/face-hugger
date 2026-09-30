@@ -34,7 +34,7 @@ Only one upload runs at a time. Success advances to the next queued job. A failu
 
 `UploadQueueControl` separates scheduling intent from the active worker’s cancellation latch. Restarting a queue while a stop is being acknowledged cannot turn the old worker’s cancellation into a failure. Explicit Start/Resume prioritizes the chosen job. Stale completion callbacks are ignored, and a drained queue becomes paused. Notification authorization runs independently so it cannot delay the worker’s launch.
 
-Newly created repositories are retained in the sidebar briefly while HF’s search-backed listing catches up. A generation token prevents stale owner-list responses from replacing newer selections.
+Newly created repositories are retained in the repository picker briefly while HF’s search-backed listing catches up. A generation token prevents stale owner-list responses from replacing newer selections.
 
 The app holds a process activity to prevent idle system sleep when enabled. This does not permit uploading during system sleep or after explicit application termination. Notification permission is requested when starting an upload.
 
@@ -98,3 +98,11 @@ Swift tests exercise validation and queue persistence/recovery. Python tests exe
 The opt-in `Scripts/live_smoke.py --run-live` additionally checks authenticated private-model and public-dataset operations, hashes, filters, replacement, deletion, interruption, and resume. It uses only synthetic files and deletes its temporary repositories. It is never run by default or in CI. Native UI verification also exercises creation, upload, stop/relaunch/resume, browsing, and deletion. See [verification results](verification.md).
 
 CI also builds the application with ad-hoc signing. This is build verification, not a distribution release: signing with a Developer ID, notarization, a bundled or more self-contained runtime installer, and bounded testing under prolonged outages remain release work. Multi-terabyte disk capacity is not an acceptance requirement; use synthetic many-file trees, bounded payloads, and controlled interruption/recovery checks.
+
+## Transfer Bench workspace
+
+The native workspace pairs a local metadata preview with a remote repository browser. The bridge `scan` command applies the pinned SDK's folder filters and default ignores, returns at most 2,000 preview rows, and counts the entire tree. Each upload and resume repeats metadata preflight to reject unreadable files and external or broken file symlinks. This is a preview of current files, not an immutable snapshot.
+
+Local scans are cancellable; generation checks prevent older scans and repository requests from replacing newer selections. Submission rechecks repository visibility and verifies the source, filters, and destination are unchanged before queueing. New remote subfolders may be previewed as empty without treating missing repositories or authentication errors as empty folders.
+
+Saved pairings persist atomically in `pairings.json` beside the queue. They store paths, repository identity, and filters, never credentials. Applying a pairing revalidates the destination and never starts an upload. The activity shelf presents queued, running, stopped, interrupted, and completed states; logs remain session-only.

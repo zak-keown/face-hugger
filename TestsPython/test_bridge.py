@@ -25,6 +25,10 @@ class BridgeTests(unittest.TestCase):
         self.addCleanup(self.protocol.stop)
         bridge._STOPPING = False
         bridge._CHILD = None
+        # Scanner behavior is exercised against real folders in test_scan.py.
+        self.scan_patch = patch.object(bridge, "scan_folder", return_value={"included_count": 1})
+        self.scanner = self.scan_patch.start()
+        self.addCleanup(self.scan_patch.stop)
 
     def events(self):
         return [json.loads(line) for line in self.output.getvalue().splitlines()]
@@ -73,6 +77,17 @@ class BridgeTests(unittest.TestCase):
                 bridge.upload(SimpleNamespace(repo="alice/model", type="model"), Mock())
         self.assertFalse(any(e["event"] == "complete" for e in self.events()))
 
+    def test_upload_preflight_failure_never_checks_repo_or_launches_cli(self):
+        self.scanner.side_effect = ValueError("Linked file points outside selected folder")
+        api = Mock()
+        args = SimpleNamespace(repo="alice/model", type="model")
+        with patch.object(bridge, "upload_command", return_value=["unused"]), patch.object(bridge.subprocess, "Popen") as spawn:
+            with self.assertRaisesRegex(ValueError, "outside"):
+                bridge.upload(args, api)
+            self.scanner.assert_called_once_with(args, row_limit=0)
+            api.repo_info.assert_not_called()
+            spawn.assert_not_called()
+
     def test_missing_repository_does_not_launch_cli(self):
         api = Mock()
         api.repo_info.side_effect = RuntimeError("not found")
@@ -119,6 +134,7 @@ bridge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
 sys.modules['huggingface_hub'] = types.SimpleNamespace(HfApi=Mock(return_value=Mock()))
 bridge.upload_command = lambda args: [sys.executable, '-c', {child_script!r}]
+bridge.scan_folder = lambda *args, **kwargs: {{}}
 sys.exit(bridge.main(['upload', '--repo', 'alice/model', '--source', '/tmp']))
 """
         process = subprocess.Popen([sys.executable, "-c", wrapper], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -191,10 +207,51 @@ sys.exit(bridge.main(['upload', '--repo', 'alice/model', '--source', '/tmp']))
         self.assertEqual(sum(e["event"] == "progress" for e in events), 1)
         self.assertEqual([e["message"] for e in events if e["event"] == "log"], [summary, "Unknown future progress format"])
 
+    def test_allow_missing_tree_only_swallows_missing_nonroot_entry(self):
+        class EntryNotFoundError(Exception):
+            pass
+        class RepositoryNotFoundError(Exception):
+            pass
+        error_module = SimpleNamespace(EntryNotFoundError=EntryNotFoundError)
+        arguments = ["tree", "--repo", "alice/model", "--path", "new/destination", "--allow-missing-path"]
+        for error in (RepositoryNotFoundError("missing repo"), PermissionError("forbidden"), ConnectionError("offline")):
+            api = Mock()
+            api.list_repo_tree.side_effect = error
+            with patch.dict(sys.modules, {"huggingface_hub.errors": error_module}):
+                with self.assertRaises(type(error)):
+                    bridge.execute(bridge.parser().parse_args(arguments), api)
+        api = Mock()
+        api.list_repo_tree.side_effect = EntryNotFoundError("missing folder")
+        with patch.dict(sys.modules, {"huggingface_hub.errors": error_module}):
+            bridge.execute(bridge.parser().parse_args(arguments), api)
+        self.assertEqual(self.events(), [{"event": "result", "data": []}])
+        for args in (["tree", "--repo", "alice/model", "--allow-missing-path"], arguments[:-1]):
+            with self.assertRaises(EntryNotFoundError):
+                bridge.execute(bridge.parser().parse_args(args), api)
+
+    def test_allow_missing_tree_handles_lazy_generator_error(self):
+        class EntryNotFoundError(Exception):
+            pass
+        def missing():
+            raise EntryNotFoundError("not here")
+            yield
+        api = Mock()
+        api.list_repo_tree.return_value = missing()
+        with patch.dict(sys.modules, {"huggingface_hub.errors": SimpleNamespace(EntryNotFoundError=EntryNotFoundError)}):
+            bridge.execute(bridge.parser().parse_args(["tree", "--repo", "alice/model", "--path", "new", "--allow-missing-path"]), api)
+        self.assertEqual(self.events(), [{"event": "result", "data": []}])
+
     def test_token_and_ansi_are_removed(self):
         with patch.dict(os.environ, {"HF_TOKEN": "an unusual secret"}):
             bridge.emit("error", message="\x1b[31man unusual secret hf_abcdefghijk\x1b[0m")
         self.assertEqual(self.events()[0]["message"], "[redacted] [redacted]")
+
+    def test_repo_info_preserves_actual_visibility_and_type(self):
+        api = Mock()
+        api.repo_info.return_value = SimpleNamespace(id="alice/data", private=True)
+        bridge.execute(bridge.parser().parse_args(["info", "--repo", "alice/data", "--type", "dataset"]), api)
+        api.repo_info.assert_called_once_with(repo_id="alice/data", repo_type="dataset")
+        self.assertEqual(self.events()[0]["data"], {"id": "alice/data", "type": "dataset", "private": True, "url": "https://huggingface.co/datasets/alice/data"})
 
     def test_create_uses_explicit_visibility_and_never_overwrites(self):
         api = Mock()

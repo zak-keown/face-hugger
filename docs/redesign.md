@@ -1,52 +1,42 @@
-# Face Hugger: redesign exploration
+# Face Hugger: Transfer Bench redesign
 
-September 30, 2026. Transfer Bench is the selected direction. These are design prototypes, not implemented features.
+September 30, 2026. Transfer Bench is now implemented in the native SwiftUI app. The [interactive prototype](https://p.superdesign.dev/draft/3f6d6851-b4e3-4d68-a1bf-f8a378ccad65) remains the approved visual reference. See [design and asset provenance](design.md), [verification record](verification.md), and the [design canvas](https://superdesign.dev/teams/d6bf7272-b808-4594-89cb-9ed77f64920c/projects/016e36f9-f366-4c98-836f-c9bbf5783746).
 
-The first app established the upload machinery but gave the user a generic queue, an inspector, and a long configuration form. The approved mascot carried almost all of the personality. The redesign starts with the relationship between a local folder and its remote destination.
+The first app established the upload machinery but separated the queue, repository browser, inspector, and long upload form. Transfer Bench puts the local folder and remote destination in the same working context.
 
-## Transfer Bench
+## Implemented workflow
 
-Two aligned file surfaces fill the window. The left shows the chosen folder on this Mac; the right shows the destination repository and folder. A small gold directional element connects their headers. A slate-blue activity shelf remains visible below both surfaces.
+Two file surfaces share the window: local staging on the left, repository browsing on the right. A small gold directional element connects their headers, and a slate activity shelf spans the bottom. The toolbar holds the approved mascot, account settings, and saved pairings. There is no permanent sidebar.
 
-Dropping a folder populates staging in place. Choosing a repository updates the remote file pane. Filters open on demand and affect the staging preview. A review strip shows the selected destination, visibility, and matching remote paths before the explicit Upload action. History and logs belong in the activity shelf rather than separate navigation destinations.
+Choosing or dropping a folder starts a cancellable preview scan. Include/exclude filters update the staged list and measured file/byte totals. The preview can be truncated while totals cover the full scan. A searchable repository picker supports account/organization repositories and explicit repository IDs. Folder navigation and a destination sheet choose where uploads go, including a not-yet-created subfolder.
 
-This is the recommended direction: it gives both uploading and limited remote management a coherent place in the same window.
+Upload is explicit; when another transfer is active, the main action queues the new job. Submission rechecks repository visibility and rejects a stale workspace configuration. The review strip currently gives a general replacement warning, not a remote collision count or per-file comparison.
 
-## Earlier alternative: Dispatch
+Saved pairings persist the source, repository, destination path, and filters, never tokens. Selecting one restores configuration without starting an upload and asks before replacing an already prepared source. Pairings can be saved and removed; search, rename, and active-pairing indication remain future polish.
 
-A narrow rail stores named local-folder/remote-repository pairings. The main workspace shows one transfer manifest with Files, Activity, and Remote views. This suits repeated checkpoint uploads with the same destination and filters. Uploads remain manual; a saved pairing is not automatic synchronization.
+## Native states
 
-The permanent rail was not selected. Saved pairings are carried into Transfer Bench as a compact toolbar popover.
+| State | Workspace | Activity shelf / action |
+| --- | --- | --- |
+| First upload | Choose/drop a folder; select or browse remote destination | 64 pt empty shelf; Upload disabled until ready |
+| Ready | Included/excluded file preview, measured totals, visible destination | Explicit Upload or Add to queue |
+| Running | Browsing and staging remain available | Concurrent reported preparation, upload/reuse, and commit counts; Stop upload |
+| Stopped this session | Prepared workspace remains | Last-reported counters where available; Resume upload |
+| Recovered after relaunch | Persisted job route is shown in the shelf | Interrupted state without invented retained counters/logs; resume validates source |
+| Completed | Current remote destination is refreshed when applicable | Completion state, date, and link to Hugging Face |
 
-## Approved state pass
+The shelf's Transfers popover holds queue/history selection, ordering, removal, and a route back to the active job. Activity logs are available only for the current session. A missing source reports a validation error; there is no dedicated Locate folder action yet.
 
-The selected prototype keeps the same window and changes state through clearly separated preview controls. Sample files and actions never touch an account.
+## Visual implementation and boundaries
 
-| State | Workspace | Activity shelf | Main action |
-| --- | --- | --- | --- |
-| First upload | Choose/drop local folder; remote repository remains browsable | Collapsed, no transfers yet | Choose folder; Upload disabled |
-| Ready | Staged file list, visible private destination, one path collision | Quiet until upload starts | Upload 4 files |
-| Running | Browsing stays available | Concurrent stage counts and sample log | Stop upload |
-| Stopped this session | Source and destination remain visible | Last-reported counts, no live indicator | Resume upload |
-| Recovered after relaunch | Persisted route and interrupted status | No invented retained counters or logs | Resume after checking source availability |
+Adaptive source/remote colors support light and dark system appearance; the activity shelf stays dark in both. The native window uses SF Pro, native tables and menus, a small identity mascot, and gold directional/primary-action accents. The two panes expand with the window but do not have a draggable divider. The prototype's external state selector and appearance switch are not native app controls.
 
-Saved pairings belong in a small toolbar popover. Choosing one restores both endpoints and filters, never starts a transfer, and must not silently discard unsent work. Dark mode keeps identical layout while separating warm graphite source, cooler remote surface, and recessed slate shelf. Gold remains reserved for direction and the primary action.
+Per-file remote collisions, content-equality checks, automatic synchronization, retained session logs/counters, and selecting uploaded files after completion are not implemented. Local/remote header and row alignment, filter-empty feedback, and explicit accessibility labels should be verified in native UI review rather than inferred from the prototype.
 
-## Design commitments
+## Design history and verification
 
-- Preserve the approved mascot, at a useful identity scale rather than as a giant empty-state illustration.
-- Use a deliberate SF Pro type scale, aligned file columns, and readable metadata.
-- Keep file surfaces continuous. Avoid dashboard cards and ornamental borders.
-- Give local files a warm porcelain surface and remote files a cool white surface, anchored by slate and restrained gold. A native dark appearance needs equal attention before implementation is complete.
-- Show preparation, upload/reuse, and committed counts as concurrent activity. No invented overall percentage or ETA.
-- Keep Stop and Resume semantics, repository visibility, keyboard interaction, and confirmations for remote deletion.
+The alternate Dispatch concept proposed a permanent saved-pairing rail and a transfer manifest. That structure was not selected; its reusable pairings became the toolbar popover.
 
-## Implementation implications
+Prototype revision 5 was inspected in Safari in light and dark appearance. Its Choose folder → Upload → Stop → Resume flow, recovery without retained counters, and pairing confirmation/update passed browser interaction checks. The recovery message was widened after clipping was found. The prototype uses fixed sample files and cannot alter an account; its local copy is `.superdesign/transfer-bench.html`.
 
-Local staging needs cancellable background enumeration and the same filter semantics as the pinned CLI. Matching-path indicators report path collisions, not content equality. Recursive remote checks must remain responsive and must not block browsing. Saved pairings persist configuration, never tokens, and uploads continue to require an explicit action. Returning to a completed upload should lead directly to its remote contents.
-
-Validation can use small synthetic trees, many-file fixtures, controlled subprocesses, and bounded interrupted uploads. Multi-terabyte disk capacity is not a prerequisite or a planned acceptance requirement.
-
-## Prototype verification
-
-Revision 5 was inspected in Safari in light and dark appearance. The Choose folder → Upload → Stop → Resume flow, recovery without retained counters, and pairing confirmation/update passed native browser interaction checks. The recovery message was widened after visual review found clipping. The prototype uses fixed sample files; account controls and file-selection changes are explicitly disabled. The local copy is `.superdesign/transfer-bench.html`; no native app behavior changed in this design pass.
+The native redesign builds successfully. Prototype interaction checks are not evidence of native end-to-end validation; current test and live-smoke evidence belongs in [verification.md](verification.md). Validation can use small synthetic trees, many-file fixtures, controlled subprocesses, and bounded interrupted uploads. Multi-terabyte disk capacity is not a prerequisite.

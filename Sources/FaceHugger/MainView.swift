@@ -4,215 +4,287 @@ import UniformTypeIdentifiers
 
 struct MainView: View {
     @Bindable var model: AppModel
-    @State private var search = ""
+    @State private var showRepos = false
+    @State private var showPairings = false
+    @State private var showFilters = false
+    @State private var showDestination = false
     @State private var dropTarget = false
+    @State private var savePairing = false
+    @State private var pairingName = ""
+    @State private var pendingPairing: SavedPairing?
+    @State private var pendingSource: URL?
+    @State private var localSearch = ""
+    @State private var sourceSelection: String?
+
     var body: some View {
-        NavigationSplitView {
-            sidebar
-                .navigationSplitViewColumnWidth(min: 200, ideal: 225, max: 280)
-        } detail: {
-            HSplitView {
-                VStack(spacing: 0) {
-                    if model.sidebar == "uploads" || model.sidebar == "history" { queue }
-                    else if let repo = model.currentRepo { RepoBrowser(model: model, repo: repo) }
-                    else { ContentUnavailableView("Choose a repository", systemImage: "folder", description: Text("Your model and dataset repositories appear in the sidebar.")) }
-                }.frame(minWidth: 390, maxWidth: .infinity, maxHeight: .infinity)
-                if let job = selectedVisibleJob {
-                    JobInspector(model: model, job: job).frame(minWidth: 265, idealWidth: 300, maxWidth: 360)
-                }
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                localPane.frame(maxWidth: .infinity)
+                Rectangle().fill(BenchTheme.divider).frame(width: 1)
+                remotePane.frame(maxWidth: .infinity)
             }
+            .overlay(alignment: .top) {
+                Image(systemName: "arrow.right").font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.15, green: 0.2, blue: 0.26))
+                    .frame(width: 32, height: 32).background(BenchTheme.gold, in: Circle())
+                    .padding(.top, 56).allowsHitTesting(false).accessibilityHidden(true)
+            }
+            reviewBar
+            TransferShelf(model: model)
         }
-        .frame(minWidth: 880, minHeight: 560)
+        .foregroundStyle(BenchTheme.ink)
+        .frame(minWidth: 1040, minHeight: 680)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                HStack(spacing: 6) { Text(model.sidebar == "history" ? "Upload history" : model.sidebar == "uploads" ? "Uploads" : model.currentRepo?.name ?? "Repositories").font(.headline) }
+                HStack(spacing: 8) {
+                    Image("Hugger").resizable().scaledToFit().frame(width: 28, height: 28).accessibilityHidden(true)
+                    Text("Face Hugger").font(.system(size: 14, weight: .semibold))
+                }
             }
             ToolbarItemGroup(placement: .primaryAction) {
-                if model.activeJob != nil { Button("Stop", systemImage: "stop.circle") { model.stop() } }
-                Button("New Upload", systemImage: "plus") { model.chooseFolder() }.help("Upload a local folder (⌘N)")
+                Button("Pairings", systemImage: "link") { showPairings.toggle() }
+                    .popover(isPresented: $showPairings, arrowEdge: .bottom) { pairingPicker }
+                Button(model.identity?.name ?? "Connect", systemImage: "person.crop.circle") { model.showSettings = true }
+                    .help("Account and settings")
             }
         }
-        .overlay { if dropTarget { RoundedRectangle(cornerRadius: 12).strokeBorder(.yellow, lineWidth: 4).padding(5).allowsHitTesting(false) } }
-        .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first, url.isFileURL else { return false }
-            model.draftSource = url.path; model.showUpload = true; return true
-        } isTargeted: { dropTarget = $0 }
-        .sheet(isPresented: $model.showUpload) { UploadSheet(model: model) }
         .sheet(isPresented: $model.showSettings) { SettingsSheet(model: model) }
         .sheet(isPresented: $model.showCreateRepo) { CreateRepoSheet(model: model) }
-        .alert("Face Hugger", isPresented: Binding(get: { model.error != nil && !model.showSettings && !model.showCreateRepo && !model.showUpload }, set: { if !$0 { model.error = nil } })) {
+        .sheet(isPresented: $showDestination) { DestinationSheet(model: model) }
+        .alert("Face Hugger", isPresented: Binding(get: { model.error != nil && !model.showSettings && !model.showCreateRepo }, set: { if !$0 { model.error = nil } })) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+        .alert("Save pairing", isPresented: $savePairing) {
+            TextField("Name", text: $pairingName)
+            Button("Cancel", role: .cancel) { }
+            Button("Save") { model.savePairing(name: pairingName) }
+        } message: { Text("Remember this folder, repository, destination path, and filters. Uploads always start manually.") }
+        .confirmationDialog("Replace the prepared folder and destination?", isPresented: Binding(get: { pendingPairing != nil }, set: { if !$0 { pendingPairing = nil } })) {
+            Button("Use pairing") { if let pairing = pendingPairing { Task { await model.applyPairing(pairing) } }; pendingPairing = nil }
+            Button("Keep current", role: .cancel) { pendingPairing = nil }
+        } message: { Text("This replaces the workspace configuration. Existing queued and running uploads keep their original settings.") }
+        .confirmationDialog("Replace the prepared folder?", isPresented: Binding(get: { pendingSource != nil }, set: { if !$0 { pendingSource = nil } })) {
+            Button("Use folder") { if let url = pendingSource { model.stageFolder(url) }; pendingSource = nil }
+            Button("Keep current", role: .cancel) { pendingSource = nil }
+        }
         .task { if model.runtimeReady && model.hasExistingCredentials { await model.connect() } }
+        .onChange(of: model.runtimeReady) { _, ready in if ready { model.scanSource() } }
     }
-    private var sidebar: some View {
+
+    private var localPane: some View {
         VStack(spacing: 0) {
-            if let identity = model.identity, !identity.organizations.isEmpty {
-                Picker("Owner", selection: $model.selectedOwner) {
-                    Text(identity.name).tag(identity.name)
-                    ForEach(identity.organizations, id: \.self) { Text($0).tag($0) }
-                }.labelsHidden().padding(.horizontal, 14).padding(.top, 10)
-                    .onChange(of: model.selectedOwner) { _, owner in Task { await model.refreshRepos(owner: owner) } }
-            }
-            List(selection: $model.sidebar) {
-                Section {
-                    Label("Uploads", systemImage: "tray.and.arrow.up").badge(model.jobs.filter { $0.state != .completed }.count).tag("uploads")
-                    Label("History", systemImage: "clock").tag("history")
-                }
-                Section {
-                    ForEach(model.repos.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { repo in
-                        HStack(spacing: 7) {
-                            Image(systemName: repo.kind == .model ? "cube" : "square.stack.3d.up").foregroundStyle(.secondary)
-                            Text(repo.name.split(separator: "/").last.map(String.init) ?? repo.name).lineLimit(1)
-                            if repo.isPrivate { Image(systemName: "lock.fill").font(.caption2).foregroundStyle(.tertiary) }
-                        }.tag(repo.id).help(repo.name)
-                    }
-                    if model.identity != nil {
-                        Button("New repository…", systemImage: "folder.badge.plus") { model.showCreateRepo = true }.buttonStyle(.plain).foregroundStyle(.secondary)
-                    }
-                } header: {
-                    HStack {
-                        Text("Repositories")
-                        Spacer()
-                        if model.loading { ProgressView().controlSize(.mini) }
-                        else { Button { Task { await model.refreshRepos() } } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.plain).help("Refresh repositories") }
-                    }
-                }
-            }
-            .searchable(text: $search, placement: .sidebar, prompt: "Find a repository")
-            .onChange(of: model.sidebar) { _, value in
-                if let repo = model.repos.first(where: { $0.id == value }) { Task { await model.browse(repo) } }
-            }
-            Divider()
-            Button { model.showSettings = true } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "person.crop.circle").font(.title2)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(model.identity?.name ?? "Connect your account").font(.callout.weight(.medium))
-                        Text(model.runtimeReady ? "Hugging Face" : "Set up upload tools").font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer(); Image(systemName: "gearshape").foregroundStyle(.secondary)
-                }.padding(14).contentShape(Rectangle())
-            }.buttonStyle(.plain)
-        }
-    }
-    private var visibleJobs: [UploadJob] { model.jobs.filter { model.sidebar == "history" ? $0.state == .completed : $0.state != .completed } }
-    private var selectedVisibleJob: UploadJob? {
-        guard model.sidebar == "uploads" || model.sidebar == "history" else { return nil }
-        return visibleJobs.first { $0.id == model.selectedJobID }
-    }
-    private var queue: some View {
-        VStack(spacing: 0) {
-            if visibleJobs.isEmpty {
-                Spacer()
-                Image("Hugger").resizable().scaledToFit().frame(width: 160, height: 160).accessibilityHidden(true)
-                Text(model.sidebar == "history" ? "Good things take a little uploading." : "A little help with big uploads.").font(.title2.weight(.semibold)).padding(.top, 16)
-                Text(model.sidebar == "history" ? "Completed uploads will be waiting here." : "Drop a folder here. We’ll take it from there.")
-                    .foregroundStyle(.secondary).padding(.top, 5)
-                Button(model.runtimeReady ? "Choose a folder…" : "Get started") {
-                    if model.runtimeReady { model.chooseFolder() } else { model.showSettings = true }
-                }.buttonStyle(.borderedProminent).controlSize(.large).padding(.top, 18)
-                Spacer()
-            } else {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("On this Mac").font(BenchTheme.metadata.weight(.medium)).foregroundStyle(BenchTheme.secondary)
+                    .frame(height: 14).padding(.bottom, 8)
+                Text(model.draftSource.isEmpty ? "Choose a local folder" : URL(fileURLWithPath: model.draftSource).lastPathComponent)
+                    .font(BenchTheme.title).lineLimit(1).truncationMode(.middle)
+                    .frame(height: 30, alignment: .leading).padding(.bottom, 4)
+                Text(model.draftSource.isEmpty ? "No folder selected" : model.draftSource.replacingOccurrences(of: NSHomeDirectory(), with: "~"))
+                    .font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary).lineLimit(1).truncationMode(.middle)
+                    .help(model.draftSource.isEmpty ? "Choose a local folder to prepare files" : model.draftSource)
+                    .frame(height: 16, alignment: .leading).padding(.bottom, 10)
                 HStack {
-                    Text(model.sidebar == "history" ? "Completed" : "Your upload queue").font(.title3.weight(.semibold))
-                    Spacer()
-                    if model.activeJob == nil && model.jobs.contains(where: { $0.state == .queued }) {
-                        Button("Start queue", systemImage: "play.fill") { model.startQueue() }.buttonStyle(.bordered)
-                    }
-                }.padding(20)
-                List(selection: $model.selectedJobID) {
-                    ForEach(visibleJobs) { job in
-                        JobRow(job: job).tag(job.id).padding(.vertical, 8)
-                            .contextMenu {
-                                if job.state != .running && job.state != .completed { Button(job.state == .queued ? "Start upload" : "Resume upload") { model.resume(job.id) } }
-                                Button("Reveal in Finder") { NSWorkspace.shared.selectFile(job.source, inFileViewerRootedAtPath: "") }
-                                Button("Open on Hugging Face") { NSWorkspace.shared.open(job.repo.url) }
-                                if job.state != .running { Button("Remove from queue", role: .destructive) { model.remove(job.id) } }
-                            }
-                    }
-                    .onMove { indices, destination in
-                        var ordered = visibleJobs
-                        ordered.move(fromOffsets: indices, toOffset: destination)
-                        let ids = Set(ordered.map(\.id)); var iterator = ordered.makeIterator()
-                        model.jobs = model.jobs.map { ids.contains($0.id) ? iterator.next()! : $0 }; model.persist()
-                    }
-                }.listStyle(.inset)
+                    Button(model.draftSource.isEmpty ? "Choose folder…" : "Choose another folder…", systemImage: "folder") { model.chooseFolder() }
+                        .buttonStyle(.plain).font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary)
+                    Spacer(minLength: 0)
+                }.frame(height: 20)
             }
-            Divider()
-            HStack(spacing: 7) {
-                Image(systemName: model.activeJob != nil ? "arrow.up.circle.fill" : "checkmark.circle").foregroundStyle(model.activeJob != nil ? .orange : .secondary)
-                Text(model.activeJob != nil ? "Uploads continue when you close this window" : "\(visibleJobs.count) \(model.sidebar == "history" ? "completed " : "")\(visibleJobs.count == 1 ? "upload" : "uploads")")
-                Spacer()
-                if model.activeJob != nil && model.keepAwake { Image(systemName: "sun.max").help("Keeping your Mac awake while uploading") }
-            }.font(.caption).foregroundStyle(.secondary).padding(.horizontal, 18).padding(.vertical, 11)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 16)
+            .frame(height: BenchTheme.paneHeaderHeight)
+            Rectangle().fill(BenchTheme.divider).frame(height: 1)
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(BenchTheme.secondary)
+                TextField("Find in preview", text: $localSearch).textFieldStyle(.plain).accessibilityLabel("Filter local preview")
+                if !localSearch.isEmpty {
+                    Button { localSearch = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(BenchTheme.secondary) }
+                        .buttonStyle(.plain).help("Clear filter").accessibilityLabel("Clear local preview filter")
+                }
+                if model.scanning { ProgressView().controlSize(.small) }
+                else if !model.draftSource.isEmpty {
+                    Button { model.scanSource() } label: { Image(systemName: "arrow.clockwise") }
+                        .buttonStyle(.plain).foregroundStyle(BenchTheme.secondary).help("Refresh local preview").accessibilityLabel("Refresh local preview")
+                }
+            }.font(BenchTheme.metadata).padding(.horizontal, 24).frame(height: BenchTheme.utilityHeight)
+            Rectangle().fill(BenchTheme.divider).frame(height: 1)
+            localFiles
+            Rectangle().fill(BenchTheme.divider).frame(height: 1)
+            HStack {
+                Text(localFootnote).lineLimit(2)
+                Spacer(minLength: 0)
+            }.font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary).padding(.horizontal, 24).frame(height: BenchTheme.footerHeight)
+        }
+        .background(BenchTheme.source)
+        .overlay { if dropTarget { Rectangle().strokeBorder(BenchTheme.gold, lineWidth: 3).allowsHitTesting(false) } }
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first, url.isFileURL else { return false }
+            if !model.draftSource.isEmpty && model.draftSource != url.path { pendingSource = url } else { model.stageFolder(url) }
+            return true
+        } isTargeted: { dropTarget = $0 }
+    }
+    @ViewBuilder private var localFiles: some View {
+        if model.draftSource.isEmpty {
+            VStack(spacing: 14) {
+                Image(systemName: "folder.badge.plus").font(.system(size: 46, weight: .light)).foregroundStyle(BenchTheme.secondary)
+                Text("Drop a folder here to prepare an upload").font(.system(size: 13)).foregroundStyle(BenchTheme.secondary)
+                if !model.runtimeReady { Button("Set up upload tools") { model.showSettings = true }.buttonStyle(.bordered) }
+            }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let error = model.scanError {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Couldn’t preview this folder", systemImage: "exclamationmark.circle").font(.headline)
+                Text(error).font(.system(size: 13)).textSelection(.enabled)
+                Button(model.runtimeReady ? "Try again" : "Set up upload tools") { if model.runtimeReady { model.scanSource() } else { model.showSettings = true } }
+            }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else if let result = model.staging {
+            let filteredFiles = result.files.filter { localSearch.isEmpty || $0.path.localizedCaseInsensitiveContains(localSearch) }
+            if !localSearch.isEmpty && filteredFiles.isEmpty {
+                ContentUnavailableView {
+                    Label("No matching files", systemImage: "magnifyingglass")
+                } description: {
+                    Text("No files in this preview match “\(localSearch)”.")
+                } actions: {
+                    Button("Clear search") { localSearch = "" }
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Table(filteredFiles, selection: $sourceSelection) {
+                    TableColumn("Name") { file in
+                        HStack(spacing: 8) {
+                            Image(systemName: file.included ? "checkmark.circle.fill" : "minus.circle").foregroundStyle(file.included ? BenchTheme.secondary : BenchTheme.secondary.opacity(0.7))
+                                .accessibilityLabel(file.included ? "Included" : "Excluded")
+                            Text(file.path).font(.system(size: 13)).foregroundStyle(file.included ? BenchTheme.ink : BenchTheme.secondary)
+                                .strikethrough(!file.included).lineLimit(1).truncationMode(.middle).help(file.path)
+                        }.frame(minHeight: 31)
+                    }
+                    TableColumn("Size") { file in Text(ByteCountFormatter.string(fromByteCount: file.size, countStyle: .file)).font(.system(size: 12)).monospacedDigit().foregroundStyle(BenchTheme.secondary) }.width(80)
+                }.tableStyle(.inset(alternatesRowBackgrounds: false)).scrollContentBackground(.hidden)
+            }
+        } else {
+            VStack(spacing: 12) { ProgressView(); Text("Reading files and applying filters…").font(.system(size: 13)).foregroundStyle(BenchTheme.secondary) }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
-}
-
-struct JobRow: View {
-    let job: UploadJob
-    var body: some View {
-        HStack(alignment: .top, spacing: 13) {
-            Image(systemName: "folder.fill").font(.system(size: 30)).foregroundStyle(Color(red: 0.33, green: 0.64, blue: 0.83)).padding(.top, 3)
-            VStack(alignment: .leading, spacing: 6) {
-                HStack { Text(job.title).font(.headline); Spacer(); Text(job.state.label).font(.caption.weight(.medium)).foregroundStyle(color) }
-                Text(job.repo.name + (job.destination.isEmpty ? "" : " / \(job.destination)")).font(.callout).foregroundStyle(.secondary).lineLimit(1)
-                if job.state == .running { ProgressView().progressViewStyle(.linear).tint(.yellow) }
-                Text(job.message).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+    private var localFootnote: String {
+        guard let staging = model.staging else { return "Preview files before uploading" }
+        if staging.truncated { return "Showing the first \(staging.files.count) of \(staging.totalCount) files. Totals include all files." }
+        return "\(staging.totalCount) files found · \(staging.totalCount - staging.includedCount) excluded"
+    }
+    @ViewBuilder private var remotePane: some View {
+        Group {
+            if let repo = model.currentRepo {
+                RepoBrowser(model: model, repo: repo, chooseRepository: { showRepos = true })
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("On Hugging Face").font(BenchTheme.metadata.weight(.medium)).foregroundStyle(BenchTheme.secondary)
+                            .frame(height: 14).padding(.bottom, 8)
+                        Text("Choose a repository").font(BenchTheme.title).lineLimit(1).truncationMode(.middle)
+                            .frame(height: 30, alignment: .leading).padding(.bottom, 4)
+                        Text(model.identity == nil ? "Connect your Hugging Face account" : "No repository selected")
+                            .font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary).lineLimit(1)
+                            .frame(height: 16, alignment: .leading).padding(.bottom, 10)
+                        HStack {
+                            Button(model.identity == nil ? "Connect account…" : "Browse repositories…", systemImage: model.identity == nil ? "person.crop.circle" : "folder") {
+                                if model.identity == nil { model.showSettings = true } else { showRepos = true }
+                            }.buttonStyle(.plain).font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary)
+                            Spacer(minLength: 0)
+                        }.frame(height: 20)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 16)
+                    .frame(height: BenchTheme.paneHeaderHeight)
+                    Rectangle().fill(BenchTheme.divider).frame(height: 1)
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                        Text("Choose a repository to browse files")
+                        Spacer(minLength: 0)
+                    }.font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary)
+                        .padding(.horizontal, 24).frame(height: BenchTheme.utilityHeight)
+                    Rectangle().fill(BenchTheme.divider).frame(height: 1)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Give this folder a destination.").font(.system(size: 15, weight: .medium))
+                        Text("Browse a model or dataset repository, then choose where the files should go.").font(.system(size: 13)).foregroundStyle(BenchTheme.secondary)
+                        if model.identity != nil { Button("Create repository…", systemImage: "plus") { model.showCreateRepo = true } }
+                    }.padding(24)
+                    Spacer()
+                    Rectangle().fill(BenchTheme.divider).frame(height: 1)
+                    Text("Choose where your files will arrive")
+                        .font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary)
+                        .padding(.horizontal, 24).frame(height: BenchTheme.footerHeight)
+                }.frame(maxWidth: .infinity, maxHeight: .infinity).background(BenchTheme.remote)
             }
-        }.padding(.vertical, 4)
+        }.popover(isPresented: $showRepos, arrowEdge: .top) { RepositoryPicker(model: model) { showRepos = false } }
     }
-    private var color: Color { switch job.state { case .completed: .green; case .failed: .red; case .running: .orange; default: .secondary } }
+    private var reviewBar: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(summary).font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                    Text(model.currentRepo == nil ? "Choose a repository to continue" : "Matching remote paths may be replaced; other files stay in place.")
+                        .font(.system(size: 12)).foregroundStyle(BenchTheme.secondary)
+                }
+                Button("Filters", systemImage: "line.3.horizontal.decrease") { showFilters.toggle() }
+                    .popover(isPresented: $showFilters) { FilterEditor(model: model) { showFilters = false } }
+                if model.currentRepo != nil {
+                    Button(model.remotePath.isEmpty ? "To root…" : "To /\(model.remotePath)", systemImage: "folder") { showDestination = true }
+                        .lineLimit(1).frame(maxWidth: 160).help("Choose a folder within the repository")
+                }
+                Spacer(minLength: 8)
+                if model.submitting { ProgressView().controlSize(.small) }
+                Menu {
+                    Button("Add to queue") { Task { await model.submitStaged(start: false) } }
+                } label: { Image(systemName: "ellipsis") }.menuStyle(.borderlessButton).frame(width: 20).disabled(!canUpload).accessibilityLabel("More upload actions")
+                Button(model.activeJob == nil ? "Upload \(model.staging?.includedCount ?? 0) files" : "Queue upload") {
+                    Task { await model.submitStaged(start: model.activeJob == nil) }
+                }.buttonStyle(BenchUploadButton()).disabled(!canUpload).keyboardShortcut(.return, modifiers: .command)
+            }.padding(.horizontal, 24).frame(height: 76)
+        }.background(BenchTheme.remote)
+    }
+    private var canUpload: Bool { model.runtimeReady && !model.scanning && !model.submitting && model.currentRepo != nil && (model.staging?.includedCount ?? 0) > 0 }
+    private var summary: String {
+        if model.scanning { return "Preparing folder…" }
+        guard let result = model.staging else { return "No files prepared" }
+        return "\(result.includedCount) files / \(ByteCountFormatter.string(fromByteCount: result.includedBytes, countStyle: .file))"
+    }
+    private var pairingPicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Saved pairings").font(.system(size: 15, weight: .semibold))
+            if model.pairings.isEmpty {
+                Text("Save a folder and its destination for the next upload.").font(.system(size: 13)).foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(model.pairings) { pairing in
+                            HStack {
+                                Button {
+                                    showPairings = false
+                                    if !model.draftSource.isEmpty { pendingPairing = pairing } else { Task { await model.applyPairing(pairing) } }
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(pairing.name).font(.system(size: 13, weight: .medium))
+                                        Text(URL(fileURLWithPath: pairing.source).lastPathComponent + " → " + pairing.repo.name + (pairing.destination.isEmpty ? "" : "/" + pairing.destination))
+                                            .font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2)
+                                    }.frame(maxWidth: .infinity, alignment: .leading).padding(6).contentShape(Rectangle())
+                                }.buttonStyle(.plain)
+                                Button { model.removePairing(pairing.id) } label: { Image(systemName: "minus.circle") }.buttonStyle(.plain).help("Remove saved pairing").accessibilityLabel("Remove saved pairing \(pairing.name)")
+                            }
+                        }
+                    }
+                }.frame(maxHeight: 250)
+            }
+            Divider()
+            Button("Save current pairing…", systemImage: "plus") { pairingName = URL(fileURLWithPath: model.draftSource).lastPathComponent; showPairings = false; savePairing = true }
+                .disabled(model.draftSource.isEmpty || model.currentRepo == nil)
+            Text("Pairings never start an upload automatically.").font(.system(size: 12)).foregroundStyle(.secondary)
+        }.padding(18).frame(width: 360)
+    }
 }
 
-struct JobInspector: View {
-    @Bindable var model: AppModel
-    let job: UploadJob
-    @State private var showLog = false
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                Text("Upload details").font(.headline)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(job.title).font(.title2.weight(.semibold)).textSelection(.enabled)
-                    Label(job.state.label, systemImage: job.state == .completed ? "checkmark.circle.fill" : "arrow.up.circle").foregroundStyle(.secondary)
-                }
-                detail("From", job.source)
-                detail("To", job.repo.name + "/" + job.destination)
-                detail("Repository", "\(job.repo.kind.rawValue.capitalized) · \(job.repo.isPrivate ? "Private" : "Visibility set on Hugging Face")")
-                detail("Added", job.createdAt.formatted(date: .abbreviated, time: .shortened))
-                if let finished = job.finishedAt { detail("Completed", finished.formatted(date: .abbreviated, time: .shortened)) }
-                if !job.includes.isEmpty { detail("Include", job.includes.joined(separator: "\n")) }
-                if !job.excludes.isEmpty { detail("Exclude", job.excludes.joined(separator: "\n")) }
-                Divider()
-                if job.state != .completed, let progress = model.progress[job.id] {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(job.state == .running ? "Live activity" : "Last reported activity").font(.caption).foregroundStyle(.secondary)
-                        LabeledContent("Prepared", value: "\(progress.checked) of \(progress.total) files")
-                        LabeledContent("Uploaded or reused", value: "\(progress.uploaded) of \(progress.uploadTotal) files")
-                        LabeledContent("Data sent", value: progress.transferred)
-                        LabeledContent("Committed", value: "\(progress.committed) files")
-                        LabeledContent("Commits", value: "\(progress.commits)")
-                    }.font(.caption).monospacedDigit()
-                }
-                if job.state == .running {
-                    Text("Preparation, transfer, and commits overlap. Already-uploaded content may be reused; only files needing transfer count toward that stage.").font(.caption).foregroundStyle(.secondary)
-                    Button("Stop uploads", systemImage: "stop.circle") { model.stop() }
-                } else if job.state != .completed {
-                    Button(job.state == .queued ? "Start upload" : "Resume upload", systemImage: "play.fill") { model.resume(job.id) }.buttonStyle(.borderedProminent)
-                    Text("Resume checks the source again. Keep its files unchanged to continue the same upload.").font(.caption).foregroundStyle(.secondary)
-                }
-                Button("Open on Hugging Face", systemImage: "arrow.up.right.square") { NSWorkspace.shared.open(job.repo.url) }
-                Button("Reveal in Finder", systemImage: "folder") { NSWorkspace.shared.selectFile(job.source, inFileViewerRootedAtPath: "") }
-                DisclosureGroup("Activity log", isExpanded: $showLog) {
-                    Text(model.logs[job.id] ?? "Logs appear here while this upload runs. Logs aren’t retained after quitting.")
-                        .font(.system(.caption, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 8)
-                }
-            }.padding(22)
-        }.background(.background.secondary)
-    }
-    private func detail(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) { Text(title).font(.caption).foregroundStyle(.secondary); Text(value).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
+struct BenchUploadButton: ButtonStyle {
+    @Environment(\.isEnabled) private var enabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.font(.system(size: 13, weight: .semibold)).padding(.horizontal, 20).padding(.vertical, 10)
+            .foregroundStyle(enabled ? Color(red: 0.15, green: 0.2, blue: 0.26) : BenchTheme.secondary)
+            .background(enabled ? BenchTheme.gold.opacity(configuration.isPressed ? 0.75 : 1) : BenchTheme.divider.opacity(0.4), in: RoundedRectangle(cornerRadius: 7))
     }
 }

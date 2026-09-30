@@ -34,6 +34,8 @@ final class CommandProcess: @unchecked Sendable {
     private let process = Process()
     private let lock = NSLock()
     private var cancelled = false
+    private let maxLineBytes: Int
+    init(maxLineBytes: Int = 128_000) { self.maxLineBytes = maxLineBytes }
     func stop() {
         lock.lock(); cancelled = true
         if process.isRunning { process.terminate() }
@@ -66,7 +68,7 @@ final class CommandProcess: @unchecked Sendable {
                             buffer.removeSubrange(...index)
                             onLine(Self.redact(line, token: token))
                         }
-                        if buffer.count > 128_000 { onLine(Self.redact(String(decoding: buffer, as: UTF8.self), token: token)); buffer.removeAll() }
+                        if buffer.count > maxLineBytes { onLine(Self.redact(String(decoding: buffer, as: UTF8.self), token: token)); buffer.removeAll() }
                     }
                     if !buffer.isEmpty { onLine(Self.redact(String(decoding: buffer, as: UTF8.self), token: token)) }
                     process.waitUntilExit()
@@ -108,11 +110,11 @@ actor CommandOutput {
 }
 
 enum HubService {
-    static func request<T: Decodable & Sendable>(_ args: [String], token: String?) async throws -> T {
+    static func request<T: Decodable & Sendable>(_ args: [String], token: String?, process: CommandProcess? = nil) async throws -> T {
         let output = CommandOutput()
         // Serialize line collection on a dedicated queue so the final result cannot overtake output.
         let collector = LineCollector()
-        let status = try await CommandProcess().run(executable: AppPaths.python, arguments: [AppPaths.bridge] + args, token: token) { collector.append($0) }
+        let status = try await (process ?? CommandProcess()).run(executable: AppPaths.python, arguments: [AppPaths.bridge] + args, token: token) { collector.append($0) }
         for line in collector.lines() { await output.append(line) }
         var failure: String?
         for line in await output.result() {

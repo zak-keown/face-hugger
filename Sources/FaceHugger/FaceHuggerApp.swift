@@ -35,10 +35,11 @@ struct FaceHuggerApp: App {
     var body: some Scene {
         Window("Face Hugger", id: "main") {
             MainView(model: model)
-                .tint(Color(red: 0.68, green: 0.45, blue: 0.03))
+                .tint(BenchTheme.transfer)
                 .onAppear { delegate.model = model }
         }
-        .defaultSize(width: 1180, height: 740)
+        .defaultSize(width: 1240, height: 820)
+        .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Upload…") { model.chooseFolder() }.keyboardShortcut("n")

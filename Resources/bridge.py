@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import stat
 import subprocess
 import sys
 from urllib.parse import quote
@@ -139,6 +140,12 @@ def handle_signal(signum, frame) -> None:
 def upload(args, api) -> None:
     global _CHILD, _SPAWNING
     command = upload_command(args)
+    emit("status", message="Checking local files and filters before upload…")
+    # Every start/resume validates the current source, including link boundaries.
+    # This metadata check is not a snapshot; files must remain stable during upload.
+    scan_folder(args, row_limit=0)
+    if _STOPPING:
+        raise InterruptedError("Upload stopped.")
     # hf upload can create missing public repos. Require an existing destination;
     # new repos must go through the app's explicit create/visibility flow.
     api.repo_info(repo_id=args.repo, repo_type=args.type)
@@ -172,10 +179,71 @@ def upload(args, api) -> None:
         _CHILD = None
 
 
+
+def scan_folder(args, *, filter_objects=None, default_ignores=None, row_limit=2000):
+    """Read metadata only; use HF's exact folder-upload filter implementation.
+
+    System-ignore paths never enter the preview. User-filtered files appear with
+    included=False. Totals cover every candidate, even when rows are capped.
+    """
+    if filter_objects is None or default_ignores is None:
+        from huggingface_hub.utils import filter_repo_objects, DEFAULT_IGNORE_PATTERNS
+        filter_objects = filter_repo_objects
+        default_ignores = DEFAULT_IGNORE_PATTERNS
+    source = Path(args.source).expanduser().resolve(strict=True)
+    if not source.is_dir():
+        raise ValueError("Choose an existing local folder to scan.")
+    files = []
+    total_count = included_count = included_bytes = 0
+    pending = [source]
+    while pending:
+        directory = pending.pop()
+        try:
+            with os.scandir(directory) as contents:
+                children = sorted(contents, key=lambda item: item.name)
+        except OSError as error:
+            raise ValueError(f"Cannot read folder '{directory}': {error.strerror or error}. Check its permissions.") from error
+        subdirectories = []
+        for entry in children:
+            path = Path(entry.path)
+            relative = path.relative_to(source).as_posix()
+            if not list(filter_objects([relative], ignore_patterns=default_ignores)):
+                continue
+            try:
+                info = entry.stat(follow_symlinks=True)
+                if stat.S_ISDIR(info.st_mode):
+                    # Mirrors pathlib glob('**/*'): do not descend into linked directories.
+                    if not entry.is_symlink():
+                        subdirectories.append(path)
+                    continue
+                if not stat.S_ISREG(info.st_mode):
+                    continue
+                if entry.is_symlink() and not path.resolve(strict=True).is_relative_to(source):
+                    raise ValueError(f"Linked file '{relative}' points outside the selected folder. Choose a folder without external file links.")
+            except OSError as error:
+                raise ValueError(f"Cannot inspect '{relative}': {error.strerror or error}. Check permissions and broken links.") from error
+            included = bool(list(filter_objects([relative], allow_patterns=args.include or None,
+                                                 ignore_patterns=args.exclude or None)))
+            total_count += 1
+            if included:
+                if not os.access(path, os.R_OK):
+                    raise ValueError(f"Cannot read included file '{relative}'. Check its permissions.")
+                included_count += 1
+                included_bytes += info.st_size
+            if len(files) < row_limit:
+                files.append({"path": relative, "size": info.st_size, "included": included})
+        pending.extend(reversed(subdirectories))
+    files.sort(key=lambda item: item["path"])
+    return {"files": files, "included_count": included_count, "included_bytes": included_bytes,
+            "total_count": total_count, "truncated": total_count > row_limit}
+
+
 def execute(args, api) -> None:
     if hasattr(args, "repo"):
         validate_repo(args.repo)
-    if args.command == "whoami":
+    if args.command == "scan":
+        data = scan_folder(args)
+    elif args.command == "whoami":
         user = api.whoami()
         data = {"name": user["name"], "fullName": user.get("fullname", ""),
                 "avatarUrl": user.get("avatarUrl", ""),
@@ -187,13 +255,25 @@ def execute(args, api) -> None:
                 data.append({"id": repo.id, "type": kind, "private": bool(repo.private),
                              "url": repo_url(repo.id, kind)})
         data.sort(key=lambda item: item["id"].lower())
+    elif args.command == "info":
+        repo = api.repo_info(repo_id=args.repo, repo_type=args.type)
+        data = {"id": repo.id, "type": args.type, "private": bool(repo.private), "url": repo_url(repo.id, args.type)}
     elif args.command == "tree":
         data = []
-        for entry in api.list_repo_tree(repo_id=args.repo, repo_type=args.type,
-                                        path_in_repo=remote_path(args.path) or None, recursive=False):
-            directory = type(entry).__name__ == "RepoFolder"
-            data.append({"path": entry.path, "type": "directory" if directory else "file",
-                         "size": 0 if directory else (getattr(entry, "size", 0) or 0)})
+        path = remote_path(args.path)
+        try:
+            for entry in api.list_repo_tree(repo_id=args.repo, repo_type=args.type,
+                                            path_in_repo=path or None, recursive=False):
+                directory = type(entry).__name__ == "RepoFolder"
+                data.append({"path": entry.path, "type": "directory" if directory else "file",
+                             "size": 0 if directory else (getattr(entry, "size", 0) or 0)})
+        except Exception as error:
+            if not args.allow_missing_path or not path:
+                raise
+            from huggingface_hub.errors import EntryNotFoundError
+            if not isinstance(error, EntryNotFoundError):
+                raise
+            data = []
         data.sort(key=lambda item: (item["type"] != "directory", item["path"].lower()))
     elif args.command == "create":
         url = api.create_repo(repo_id=args.repo, repo_type=args.type, private=args.private == "true", exist_ok=False)
@@ -215,14 +295,20 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("whoami")
+    scan = commands.add_parser("scan")
+    scan.add_argument("--source", required=True)
+    scan.add_argument("--include", action="append", default=[])
+    scan.add_argument("--exclude", action="append", default=[])
     repos = commands.add_parser("repos")
     repos.add_argument("--owner", required=True)
-    for name in ("tree", "create", "delete", "upload"):
+    for name in ("info", "tree", "create", "delete", "upload"):
         command = commands.add_parser(name)
         command.add_argument("--repo", required=True)
         command.add_argument("--type", choices=("model", "dataset"), default="model")
         if name in ("tree", "delete"):
             command.add_argument("--path", default="", required=name == "delete")
+        if name == "tree":
+            command.add_argument("--allow-missing-path", action="store_true")
         if name == "create":
             command.add_argument("--private", choices=("true", "false"), required=True)
         if name == "upload":

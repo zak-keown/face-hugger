@@ -12,25 +12,35 @@
 		33D0E52753A98C9585966907 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2050DFC39D4E98D1893B50F /* Services.swift */; };
 		386B6880ECC2143F963A85DF /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B49DCA59F65A1B0D8E253451 /* Sheets.swift */; };
 		44C49A71382B06A9FC2A17DF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 551CCA4B4D77240C93F7DE7F /* Assets.xcassets */; };
+		56918ED302092DB1B2230A57 /* Staging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F4A81CCDC3EEFA5352E7B6 /* Staging.swift */; };
 		5D3403C6423FB92F0D77A13F /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4429FC49D860F2CEB1BA756 /* AppModel.swift */; };
 		6245C0905AE4F4A28AEEFFE2 /* RepoBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */; };
+		6751B6349658099D26F02582 /* TransferShelf.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFFB7614BA91DFE1FAACA70 /* TransferShelf.swift */; };
 		77C0E3775BF2F6CB2CE83C5B /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04D4F232BBF187F37D6ED3F /* MainView.swift */; };
 		91C01F0DCFDFEE17A98D08EB /* bridge.py in Resources */ = {isa = PBXBuildFile; fileRef = FB41A3FCE9550CCDF44C9C85 /* bridge.py */; };
+		930076E3A957091B48AC4123 /* BenchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793A9EA74C7F945CC4335129 /* BenchTheme.swift */; };
+		A2E4F09F3BA1CA40F61307D1 /* BenchControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A275FB7C1D328FEF9992FD0F /* BenchControls.swift */; };
 		AA80942DE40DA75EB0CAAE29 /* FaceHuggerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */; };
 		CFB98D4306B669B91DE3E6AA /* requirements.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3D18595E3830863CD781BAEA /* requirements.txt */; };
+		F47E4754D8362D313622328B /* Pairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D441123AB181F9E22F234FDA /* Pairing.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		3D18595E3830863CD781BAEA /* requirements.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = requirements.txt; sourceTree = "<group>"; };
 		551CCA4B4D77240C93F7DE7F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceHuggerApp.swift; sourceTree = "<group>"; };
+		71F4A81CCDC3EEFA5352E7B6 /* Staging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Staging.swift; sourceTree = "<group>"; };
+		793A9EA74C7F945CC4335129 /* BenchTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchTheme.swift; sourceTree = "<group>"; };
 		A2050DFC39D4E98D1893B50F /* Services.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services.swift; sourceTree = "<group>"; };
+		A275FB7C1D328FEF9992FD0F /* BenchControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchControls.swift; sourceTree = "<group>"; };
 		A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadQueueControl.swift; sourceTree = "<group>"; };
 		A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoBrowser.swift; sourceTree = "<group>"; };
 		A8BEBDC316A4528BCF27BAA7 /* FaceHugger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FaceHugger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4429FC49D860F2CEB1BA756 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		B49DCA59F65A1B0D8E253451 /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
 		CEEA1D44DC5B7FFD67051296 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		D441123AB181F9E22F234FDA /* Pairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pairing.swift; sourceTree = "<group>"; };
+		DBFFB7614BA91DFE1FAACA70 /* TransferShelf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferShelf.swift; sourceTree = "<group>"; };
 		E04D4F232BBF187F37D6ED3F /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		FB41A3FCE9550CCDF44C9C85 /* bridge.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = bridge.py; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -40,6 +50,7 @@
 			isa = PBXGroup;
 			children = (
 				CEEA1D44DC5B7FFD67051296 /* Models.swift */,
+				D441123AB181F9E22F234FDA /* Pairing.swift */,
 				A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */,
 			);
 			name = FaceHuggerCore;
@@ -50,11 +61,15 @@
 			isa = PBXGroup;
 			children = (
 				B4429FC49D860F2CEB1BA756 /* AppModel.swift */,
+				A275FB7C1D328FEF9992FD0F /* BenchControls.swift */,
+				793A9EA74C7F945CC4335129 /* BenchTheme.swift */,
 				5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */,
 				E04D4F232BBF187F37D6ED3F /* MainView.swift */,
 				A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */,
 				A2050DFC39D4E98D1893B50F /* Services.swift */,
 				B49DCA59F65A1B0D8E253451 /* Sheets.swift */,
+				71F4A81CCDC3EEFA5352E7B6 /* Staging.swift */,
+				DBFFB7614BA91DFE1FAACA70 /* TransferShelf.swift */,
 			);
 			name = FaceHugger;
 			path = Sources/FaceHugger;
@@ -161,12 +176,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				5D3403C6423FB92F0D77A13F /* AppModel.swift in Sources */,
+				A2E4F09F3BA1CA40F61307D1 /* BenchControls.swift in Sources */,
+				930076E3A957091B48AC4123 /* BenchTheme.swift in Sources */,
 				AA80942DE40DA75EB0CAAE29 /* FaceHuggerApp.swift in Sources */,
 				77C0E3775BF2F6CB2CE83C5B /* MainView.swift in Sources */,
 				0567DC6C5094F13912B74184 /* Models.swift in Sources */,
+				F47E4754D8362D313622328B /* Pairing.swift in Sources */,
 				6245C0905AE4F4A28AEEFFE2 /* RepoBrowser.swift in Sources */,
 				33D0E52753A98C9585966907 /* Services.swift in Sources */,
 				386B6880ECC2143F963A85DF /* Sheets.swift in Sources */,
+				56918ED302092DB1B2230A57 /* Staging.swift in Sources */,
+				6751B6349658099D26F02582 /* TransferShelf.swift in Sources */,
 				298481F80C2635E8BA816699 /* UploadQueueControl.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
