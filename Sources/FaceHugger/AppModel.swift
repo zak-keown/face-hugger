@@ -21,6 +21,12 @@ final class AppModel {
     var draftIncludes: [String] = []
     var draftExcludes = [".DS_Store", "**/.DS_Store"]
     var staging: StagingResult?
+    var comparison: RemoteComparison?
+    var comparing = false
+    var comparisonError: String?
+    var browseError: String?
+    private var comparisonGeneration = UUID()
+    private var comparisonProcess: CommandProcess?
     var scanning = false
     var scanError: String?
     var pairings: [SavedPairing] = []
@@ -75,7 +81,7 @@ final class AppModel {
     }
     func disconnect() {
         guard activeJob == nil else { error = "Stop the active upload before signing out."; return }
-        do { try CredentialStore.save(""); selectionGeneration = UUID(); browseGeneration = UUID(); repoRefreshGeneration = UUID(); loading = false; token = nil; identity = nil; repos = []; entries = []; currentRepo = nil }
+        do { try CredentialStore.save(""); selectionGeneration = UUID(); browseGeneration = UUID(); repoRefreshGeneration = UUID(); loading = false; token = nil; identity = nil; repos = []; entries = []; currentRepo = nil; invalidateComparison() }
         catch { self.error = error.localizedDescription }
     }
     func refreshRepos(owner: String? = nil) async {
@@ -96,15 +102,16 @@ final class AppModel {
     func browse(_ repo: HubRepo, path: String = "", allowMissing: Bool = false) async {
         selectionGeneration = UUID()
         let generation = UUID(); browseGeneration = generation
-        currentRepo = repo; remotePath = path; entries = []; loading = true
+        currentRepo = repo; remotePath = path; entries = []; browseError = nil; loading = true
+        invalidateComparison()
         do {
             var arguments = ["tree", "--repo", repo.name, "--type", repo.kind.rawValue, "--path", path]
             if allowMissing { arguments.append("--allow-missing-path") }
             let result: [RemoteEntry] = try await HubService.request(arguments, token: token)
             guard browseGeneration == generation else { return }
             entries = result.sorted { a, b in a.isDirectory == b.isDirectory ? a.path.localizedStandardCompare(b.path) == .orderedAscending : a.isDirectory }
-        } catch { if browseGeneration == generation { self.error = error.localizedDescription } }
-        if browseGeneration == generation { loading = false }
+        } catch { if browseGeneration == generation { browseError = error.localizedDescription } }
+        if browseGeneration == generation { loading = false; compareSource() }
     }
     func createRepo(name: String, kind: RepoKind, isPrivate: Bool) async {
         loading = true; defer { loading = false }
@@ -137,7 +144,7 @@ final class AppModel {
         scanSource()
     }
     func scanSource() {
-        scanProcess?.stop(); scanGeneration = UUID()
+        scanProcess?.stop(); scanGeneration = UUID(); invalidateComparison()
         staging = nil; scanError = nil; scanning = false
         guard !draftSource.isEmpty else { return }
         guard runtimeReady else { scanError = "Set up upload tools to preview this folder."; return }
@@ -151,6 +158,7 @@ final class AppModel {
                 let result: StagingResult = try await HubService.request(args, token: nil, process: process)
                 guard generation == scanGeneration else { return }
                 staging = result
+                compareSource()
             } catch {
                 guard generation == scanGeneration else { return }
                 scanError = error.localizedDescription
@@ -158,10 +166,58 @@ final class AppModel {
             if generation == scanGeneration { scanning = false; scanProcess = nil }
         }
     }
+    private func invalidateComparison() {
+        comparisonProcess?.stop(); comparisonProcess = nil
+        comparisonGeneration = UUID(); comparison = nil; comparisonError = nil; comparing = false
+    }
+    func compareSource() {
+        invalidateComparison()
+        guard let staging, let repo = currentRepo else { return }
+        let generation = comparisonGeneration, destination = remotePath
+        let process = CommandProcess(maxLineBytes: 16_000_000)
+        comparisonProcess = process; comparing = true
+        Task {
+            let manifest = FileManager.default.temporaryDirectory.appendingPathComponent("face-hugger-compare-\(UUID().uuidString).json")
+            defer { try? FileManager.default.removeItem(at: manifest) }
+            do {
+                try JSONEncoder().encode(staging.files.filter(\.included).map(\.path)).write(to: manifest, options: .atomic)
+                let result: RemoteComparison = try await HubService.request(["compare", "--repo", repo.name, "--type", repo.kind.rawValue, "--destination", destination, "--manifest", manifest.path], token: token, process: process)
+                guard comparisonGeneration == generation else { return }
+                comparison = result
+            } catch {
+                guard comparisonGeneration == generation else { return }
+                comparisonError = error.localizedDescription
+            }
+            if comparisonGeneration == generation { comparing = false; comparisonProcess = nil }
+        }
+    }
+    func fileStatus(_ file: StagedFile) -> String {
+        if !file.included { return "Excluded" }
+        if comparing { return "Checking…" }
+        guard let comparison else { return "Not checked" }
+        if comparison.paths.contains(file.path) { return "Remote path exists" }
+        return comparison.complete ? "New path" : "Not checked"
+    }
+    func locateSource(for id: UUID) {
+        guard let index = jobs.firstIndex(where: { $0.id == id }), jobs[index].state != .running else { return }
+        let panel = NSOpenPanel(); panel.canChooseDirectories = true; panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false; panel.prompt = "Use folder"
+        panel.message = "Choose the source for this upload. Review its current files before resuming."
+        guard panel.runModal() == .OK, let url = panel.url,
+              let index = jobs.firstIndex(where: { $0.id == id }), jobs[index].state != .running else { return }
+        progress.removeValue(forKey: id)
+        jobs[index].source = url.path; jobs[index].state = .stopped
+        jobs[index].message = "Source folder updated. Review files, then resume when ready."
+        persist()
+        draftSource = url.path; draftIncludes = jobs[index].includes; draftExcludes = jobs[index].excludes
+        scanSource()
+        let job = jobs[index]
+        Task { await selectRepo(job.repo, path: job.destination) }
+    }
     func selectRepo(_ repo: HubRepo, path: String = "") async {
         // Stored visibility can change remotely. Refresh it whenever a destination is selected.
         let generation = UUID(); selectionGeneration = generation; browseGeneration = UUID()
-        currentRepo = nil; remotePath = ""; entries = []; loading = true
+        currentRepo = nil; remotePath = ""; entries = []; loading = true; invalidateComparison()
         defer { if selectionGeneration == generation { loading = false } }
         do {
             let result: RepoResponse = try await HubService.request(["info", "--repo", repo.name, "--type", repo.kind.rawValue], token: token)

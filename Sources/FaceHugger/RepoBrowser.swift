@@ -94,6 +94,16 @@ struct RepoBrowser: View {
                 ProgressView().controlSize(.small)
                 Text("Loading remote files…").font(BenchTheme.body).foregroundStyle(BenchTheme.secondary)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let error = model.browseError {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Couldn’t load remote files", systemImage: "exclamationmark.circle").font(BenchTheme.section)
+                Text(error).font(BenchTheme.body).foregroundStyle(BenchTheme.secondary).textSelection(.enabled)
+                HStack {
+                    Button("Try again") { Task { await model.browse(repo, path: model.remotePath, allowMissing: true) } }
+                    Button("Account settings…") { model.showSettings = true }
+                }
+                Spacer()
+            }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if filteredEntries.isEmpty {
             VStack(alignment: .leading, spacing: 9) {
                 Image(systemName: search.isEmpty ? "folder" : "magnifyingglass").font(.system(size: 25, weight: .light))

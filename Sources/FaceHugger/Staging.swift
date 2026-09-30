@@ -17,3 +17,8 @@ struct StagingResult: Decodable, Sendable {
         case includedCount = "included_count", includedBytes = "included_bytes", totalCount = "total_count"
     }
 }
+
+struct RemoteComparison: Decodable, Sendable {
+    let paths: [String]
+    let complete: Bool
+}

@@ -10,6 +10,7 @@ session before the bridge exits. Rerunning an upload lets HF deduplicate content
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import contextlib
 import json
 import os
@@ -162,15 +163,18 @@ def upload(args, api) -> None:
         if _STOPPING:
             stop_child()
             raise InterruptedError("Upload stopped.")
+        recent_logs = deque(maxlen=3)
         for line in _CHILD.stdout:
-            message = line.strip()
+            message = redact(line.strip())
             if message:
+                recent_logs.append(redact(message[-1000:]))
                 emit("log", message=message[-8192:])
                 if progress := parse_progress(message):
                     emit("progress", **progress)
         code = _CHILD.wait()
         if code:
-            raise RuntimeError(f"HF upload exited with status {code}. Review the upload log and retry.")
+            detail = " | ".join(recent_logs)[-1000:]
+            raise RuntimeError(f"HF upload exited with status {code}. " + (detail or "Review the upload log and retry."))
         emit("complete", url=repo_url(args.repo, args.type))
     finally:
         stop_child()
@@ -238,6 +242,55 @@ def scan_folder(args, *, filter_objects=None, default_ignores=None, row_limit=20
             "total_count": total_count, "truncated": total_count > row_limit}
 
 
+
+def compare_paths(args, api, *, entry_limit=100000):
+    """Compare exact remote names (files or directories), never content equality.
+
+    complete=False never establishes missing paths. Ancestor/prefix conflicts
+    are not detected; presence does not imply the path is replaceable.
+    """
+    requested = list(args.file)
+    if args.manifest:
+        with open(args.manifest, "r", encoding="utf-8") as manifest:
+            raw = manifest.read(16 * 1024 * 1024 + 1)
+        if len(raw) > 16 * 1024 * 1024:
+            raise ValueError("The comparison manifest is too large.")
+        paths = json.loads(raw)
+        if not isinstance(paths, list) or any(not isinstance(path, str) for path in paths):
+            raise ValueError("The comparison manifest must be a JSON array of relative file paths.")
+        requested.extend(paths)
+    if len(requested) > 2000:
+        raise ValueError("Compare at most 2000 staged file paths at a time.")
+    if any(not isinstance(path, str) or not path or path.startswith("/") or path.endswith("/") for path in requested):
+        raise ValueError("Comparison paths must be nonempty relative file paths.")
+    requested = {remote_path(path) for path in requested}
+    destination = remote_path(args.destination)
+    prefix = destination + "/" if destination else ""
+    targets = {prefix + path: path for path in requested}
+    found = set()
+    if not targets:
+        return {"paths": [], "complete": True}
+    visited = 0
+    try:
+        for entry in api.list_repo_tree(repo_id=args.repo, repo_type=args.type,
+                                        path_in_repo=destination or None, recursive=True):
+            visited += 1
+            if entry.path in targets:
+                found.add(targets[entry.path])
+            if len(found) == len(targets):
+                return {"paths": sorted(found), "complete": True}
+            if visited >= entry_limit:
+                return {"paths": sorted(found), "complete": False}
+    except Exception as error:
+        if not destination or visited:
+            raise
+        from huggingface_hub.errors import EntryNotFoundError
+        if not isinstance(error, EntryNotFoundError):
+            raise
+        return {"paths": [], "complete": True}
+    return {"paths": sorted(found), "complete": True}
+
+
 def execute(args, api) -> None:
     if hasattr(args, "repo"):
         validate_repo(args.repo)
@@ -255,6 +308,8 @@ def execute(args, api) -> None:
                 data.append({"id": repo.id, "type": kind, "private": bool(repo.private),
                              "url": repo_url(repo.id, kind)})
         data.sort(key=lambda item: item["id"].lower())
+    elif args.command == "compare":
+        data = compare_paths(args, api)
     elif args.command == "info":
         repo = api.repo_info(repo_id=args.repo, repo_type=args.type)
         data = {"id": repo.id, "type": args.type, "private": bool(repo.private), "url": repo_url(repo.id, args.type)}
@@ -301,12 +356,16 @@ def parser() -> argparse.ArgumentParser:
     scan.add_argument("--exclude", action="append", default=[])
     repos = commands.add_parser("repos")
     repos.add_argument("--owner", required=True)
-    for name in ("info", "tree", "create", "delete", "upload"):
+    for name in ("compare", "info", "tree", "create", "delete", "upload"):
         command = commands.add_parser(name)
         command.add_argument("--repo", required=True)
         command.add_argument("--type", choices=("model", "dataset"), default="model")
         if name in ("tree", "delete"):
             command.add_argument("--path", default="", required=name == "delete")
+        if name == "compare":
+            command.add_argument("--destination", default="")
+            command.add_argument("--manifest")
+            command.add_argument("--file", action="append", default=[])
         if name == "tree":
             command.add_argument("--allow-missing-path", action="store_true")
         if name == "create":

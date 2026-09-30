@@ -29,6 +29,7 @@ struct MainView: View {
                     .frame(width: 32, height: 32).background(BenchTheme.gold, in: Circle())
                     .padding(.top, 56).allowsHitTesting(false).accessibilityHidden(true)
             }
+            comparisonBar
             reviewBar
             TransferShelf(model: model)
         }
@@ -134,6 +135,7 @@ struct MainView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Label("Couldn’t preview this folder", systemImage: "exclamationmark.circle").font(.headline)
                 Text(error).font(.system(size: 13)).textSelection(.enabled)
+                Button("Locate folder…") { model.chooseFolder() }
                 Button(model.runtimeReady ? "Try again" : "Set up upload tools") { if model.runtimeReady { model.scanSource() } else { model.showSettings = true } }
             }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if let result = model.staging {
@@ -156,6 +158,11 @@ struct MainView: View {
                                 .strikethrough(!file.included).lineLimit(1).truncationMode(.middle).help(file.path)
                         }.frame(minHeight: 31)
                     }
+                    TableColumn("Status") { file in
+                        Text(model.fileStatus(file)).font(BenchTheme.metadata)
+                            .foregroundStyle(file.included && model.comparison?.paths.contains(file.path) == true ? BenchTheme.pathMatch : BenchTheme.secondary)
+                            .help("Path comparison only. File contents have not been compared.")
+                    }.width(125)
                     TableColumn("Size") { file in Text(ByteCountFormatter.string(fromByteCount: file.size, countStyle: .file)).font(.system(size: 12)).monospacedDigit().foregroundStyle(BenchTheme.secondary) }.width(80)
                 }.tableStyle(.inset(alternatesRowBackgrounds: false)).scrollContentBackground(.hidden)
             }
@@ -214,6 +221,21 @@ struct MainView: View {
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).background(BenchTheme.remote)
             }
         }.popover(isPresented: $showRepos, arrowEdge: .top) { RepositoryPicker(model: model) { showRepos = false } }
+    }
+    @ViewBuilder private var comparisonBar: some View {
+        if model.staging != nil && model.currentRepo != nil {
+            HStack(spacing: 10) {
+                if model.comparing { ProgressView().controlSize(.small) }
+                Text(model.comparing ? "Checking remote paths…" : model.comparisonError != nil ? "Remote paths couldn’t be checked." : model.comparison?.complete == false ? "Remote check reached its limit. Some paths remain unchecked." : "Path check covers previewed files only. Contents have not been compared.")
+                    .font(BenchTheme.metadata).foregroundStyle(BenchTheme.secondary)
+                Spacer()
+                if model.comparisonError != nil {
+                    Button("Account…") { model.showSettings = true }
+                }
+                Button("Check again") { model.compareSource() }.disabled(model.comparing)
+                    .help(model.comparisonError ?? "Refresh remote path status")
+            }.padding(.horizontal, 24).padding(.vertical, 8).background(BenchTheme.source)
+        }
     }
     private var reviewBar: some View {
         VStack(spacing: 0) {

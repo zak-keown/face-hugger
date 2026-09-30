@@ -77,6 +77,19 @@ class BridgeTests(unittest.TestCase):
                 bridge.upload(SimpleNamespace(repo="alice/model", type="model"), Mock())
         self.assertFalse(any(e["event"] == "complete" for e in self.events()))
 
+    def test_cli_failure_keeps_bounded_redacted_tail_for_recovery(self):
+        script = "print('first line ignored'); print('Network timeout with hf_abcdefghijklmnop'); print('401 Unauthorized'); print('Retry connection'); raise SystemExit(1)"
+        with patch.object(bridge, "upload_command", return_value=[sys.executable, "-c", script]):
+            with self.assertRaises(RuntimeError) as caught:
+                bridge.upload(SimpleNamespace(repo="alice/model", type="model"), Mock())
+        message = str(caught.exception)
+        self.assertIn('Network timeout', message)
+        self.assertIn('401 Unauthorized', message)
+        self.assertIn('[redacted]', message)
+        self.assertNotIn('hf_abcdefghijklmnop', message)
+        self.assertNotIn('first line ignored', message)
+        self.assertLessEqual(len(message), 1050)
+
     def test_upload_preflight_failure_never_checks_repo_or_launches_cli(self):
         self.scanner.side_effect = ValueError("Linked file points outside selected folder")
         api = Mock()

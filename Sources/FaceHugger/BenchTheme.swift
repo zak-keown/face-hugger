@@ -7,6 +7,7 @@ enum BenchTheme {
     static var remote: Color { adaptive(light: 0xF8FAFC, dark: 0x252D35) }
     static var ink: Color { adaptive(light: 0x253443, dark: 0xEDF0F2) }
     static var secondary: Color { adaptive(light: 0x64707C, dark: 0xADB7C0) }
+    static var pathMatch: Color { adaptive(light: 0x865D00, dark: 0xF6C845) }
     static var gold: Color { Color(nsColor: rgb(0xF6C845)) }
     static var divider: Color { adaptive(light: 0xD9DEE1, dark: 0x43505B) }
     static var dock: Color { adaptive(light: 0x253443, dark: 0x1C252E) }

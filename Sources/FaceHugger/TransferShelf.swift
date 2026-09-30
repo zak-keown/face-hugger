@@ -19,6 +19,15 @@ struct TransferShelf: View {
     private var listedJobs: [UploadJob] {
         model.jobs.filter { showHistory ? $0.state == .completed : $0.state != .completed }
     }
+    private func recovery(_ job: UploadJob) -> UploadRecoveryHint {
+        var isDirectory: ObjCBool = false
+        let exists = FileManager.default.fileExists(atPath: job.source, isDirectory: &isDirectory) && isDirectory.boolValue
+        return UploadRecoveryHint.classify(message: job.message, sourceExists: exists)
+    }
+
+    private func resumeLabel(_ job: UploadJob) -> String {
+        job.state == .queued ? "Start upload" : job.state == .failed ? "Retry upload" : "Resume upload"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -86,7 +95,7 @@ struct TransferShelf: View {
         VStack(alignment: .leading, spacing: 7) {
             Text(job.title).font(.system(size: 14, weight: .semibold)).lineLimit(1)
             Text(job.source).foregroundStyle(muted).lineLimit(1).truncationMode(.middle)
-                .help(job.source).textSelection(.enabled)
+                .help(job.source).textSelection(.enabled).id(job.source)
             Label(job.repo.name + (job.destination.isEmpty ? "" : "/" + job.destination), systemImage: "arrow.right")
                 .foregroundStyle(muted).lineLimit(2).textSelection(.enabled)
                 .help(job.repo.name + "/" + job.destination)
@@ -103,6 +112,13 @@ struct TransferShelf: View {
                 Label("Files committed to Hugging Face", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(Color(red: 0.545, green: 0.835, blue: 0.639))
                 Text(job.message).foregroundStyle(muted).textSelection(.enabled)
+            }
+        } else if job.state == .failed || (job.state != .running && recovery(job) == .missingSource) {
+            VStack(alignment: .leading, spacing: 9) {
+                Text(job.message).foregroundStyle(.white).textSelection(.enabled)
+                    .lineLimit(3).help(job.message)
+                Text(recovery(job).guidance).foregroundStyle(muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         } else if let progress = model.progress[job.id], job.state != .interrupted {
             VStack(alignment: .leading, spacing: 10) {
@@ -154,8 +170,17 @@ struct TransferShelf: View {
                 Button("Stop upload", systemImage: "stop.fill") { model.stop() }
                     .buttonStyle(.borderedProminent).tint(gold).foregroundStyle(slate)
             } else if job.state != .completed {
-                Button(job.state == .queued ? "Start upload" : "Resume upload", systemImage: "play.fill") { model.resume(job.id) }
+                if recovery(job) == .missingSource {
+                    Button("Locate folder…", systemImage: "folder") { model.locateSource(for: job.id) }
+                        .buttonStyle(.borderedProminent).tint(gold).foregroundStyle(slate)
+                        .help("Locate the original source folder; upload will not start automatically")
+                } else if job.state == .failed && recovery(job) == .authentication {
+                    Button("Account settings…", systemImage: "person.crop.circle") { model.showSettings = true }
+                        .buttonStyle(.plain).foregroundStyle(gold)
+                }
+                Button(resumeLabel(job), systemImage: "play.fill") { model.resume(job.id) }
                     .buttonStyle(.borderedProminent).tint(gold).foregroundStyle(slate)
+                    .disabled(recovery(job) == .missingSource)
                     .help(model.activeJob == nil ? "Start this upload" : "Run this upload after the active transfer")
             }
             Button("Open on Hugging Face", systemImage: "arrow.up.right.square") { NSWorkspace.shared.open(job.repo.url) }
@@ -198,7 +223,14 @@ struct TransferShelf: View {
                         .tag(job.id)
                         .contextMenu {
                             if job.state != .running && job.state != .completed {
-                                Button(job.state == .queued ? "Start upload" : "Resume upload") { model.resume(job.id) }
+                                Button(resumeLabel(job)) { model.resume(job.id) }
+                                    .disabled(recovery(job) == .missingSource)
+                                if recovery(job) == .missingSource {
+                                    Button("Locate source folder…") { model.locateSource(for: job.id) }
+                                }
+                                if job.state == .failed && recovery(job) == .authentication {
+                                    Button("Account settings…") { model.showSettings = true }
+                                }
                             }
                             if job.state == .running { Button("Stop upload") { model.stop() } }
                             Button("Reveal in Finder") { NSWorkspace.shared.selectFile(job.source, inFileViewerRootedAtPath: "") }

@@ -106,3 +106,11 @@ The native workspace pairs a local metadata preview with a remote repository bro
 Local scans are cancellable; generation checks prevent older scans and repository requests from replacing newer selections. Submission rechecks repository visibility and verifies the source, filters, and destination are unchanged before queueing. New remote subfolders may be previewed as empty without treating missing repositories or authentication errors as empty folders.
 
 Saved pairings persist atomically in `pairings.json` beside the queue. They store paths, repository identity, and filters, never credentials. Applying a pairing revalidates the destination and never starts an upload. The activity shelf presents queued, running, stopped, interrupted, and completed states; logs remain session-only.
+
+## Path status and recovery
+
+The `compare` command accepts a temporary JSON manifest of up to 2,000 staged paths and recursively streams remote entries under the destination, stopping at 100,000 entries or when all requested paths are found. It returns matching relative paths and a completeness flag. Only a complete result establishes a new path; failures and incomplete listings retain “Not checked.” Exact paths are compared, not bytes, hashes, or ancestor-path conflicts. Refresh before acting on remotely changed content; this is an advisory snapshot, not a transaction.
+
+Comparison processes are cancelled and generation-guarded when the source, filters, repository, or destination changes. Temporary manifests are removed after the request. No local contents are uploaded for comparison.
+
+Failed CLI exits retain a bounded, redacted tail of output in the persisted job message. Conservative recovery hints suggest account settings or network checks; unknown failures stay generic. Missing source folders offer a native locator. Locating replaces that job's source, clears stale progress, prepares its source/filter/destination workspace, and leaves the job stopped. It never starts a transfer. Remote browser failures remain visibly distinct from empty directories.

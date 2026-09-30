@@ -8,7 +8,7 @@ See the [interactive Transfer Bench prototype](https://p.superdesign.dev/draft/3
 
 Two aligned file surfaces connect **On this Mac** to **On Hugging Face**. A small gold directional element joins their headers; a continuous slate activity shelf anchors both panes. No permanent sidebar, card grid, or separate inspector. Keep the approved mascot at a small identity scale rather than above an empty-state slogan.
 
-Drop or choose a folder to stage its contents in place. A searchable repository selector updates the remote pane. Filters open on demand. The repository header identifies visibility; a review strip shows measured file totals, destination-folder controls, and a general matching-path replacement warning before an explicit Upload action. Per-file collision detection and collision counts are not implemented. Starting a transfer moves its activity into the shelf while browsing remains available.
+Drop or choose a folder to stage its contents in place. A searchable repository selector updates the remote pane. Filters open on demand. The repository header identifies visibility; a review strip shows measured file totals, destination-folder controls, and a general matching-path replacement warning before an explicit Upload action. Per-file status compares exact remote paths; it does not compare contents or detect ancestor conflicts. Starting a transfer moves its activity into the shelf while browsing remains available.
 
 Saved pairings live in a compact toolbar popover. Choosing one restores both endpoints and filters, never starts a transfer, and must not silently discard unsent work. History and logs belong with the activity shelf. Pairings do not imply automatic synchronization.
 
@@ -32,7 +32,7 @@ The table records the shared adaptive theme. The current activity shelf uses its
 - **Empty:** retain the paired workspace and useful remote browsing. Offer Choose folder and a modest drop affordance; disable Upload until ready. Collapse an empty activity shelf to about 64 pt.
 - **Running:** show reported preparation, upload/reuse, and committed counts as concurrent activity. Never invent an overall percentage, speed, or ETA, or imply a sequential wizard.
 - **Stopped this session:** preserve the route and explicitly label available counters as last reported. Show Resume upload and explain that already committed files remain remote and the source is checked again.
-- **Recovered after relaunch:** show only persisted state. Do not invent retained counters, logs, or a cause. An unavailable source produces a validation failure on resume; a dedicated Locate folder recovery action is not implemented.
+- **Recovered after relaunch:** show only persisted state. Do not invent retained counters, logs, or a cause. An unavailable source produces a validation failure on resume and offers Locate folder without automatically restarting.
 - **Saved pairings:** the toolbar popover saves, restores, and removes named source/destination/filter configurations; applying a pairing over a prepared source asks for confirmation. Pairing search, rename, and active-pairing indication are not implemented.
 - **Prototype controls:** the reference prototype has an external state selector and appearance toggle. The native app follows system appearance and operates on real files/accounts; it has no sample-state switcher.
 
@@ -41,3 +41,5 @@ The table records the shared adaptive theme. The current activity shelf uses its
 `Resources/Assets.xcassets` contains the app icon in all standard Mac sizes and a transparent `Hugger` image. The user explicitly directed the identity toward a Hugging Face-like emoji wrapped by an Alien-style facehugger. The artwork has a happy yellow face, hugging hands, tan segmented fingers around the head, and a long curved tail. No folder, upload glyph, or antenna blob remains.
 
 The master artwork is `Resources/Artwork/face-hugger-master.png`, generated with the built-in imagegen tool. `Scripts/Art/build_assets.swift` mechanically resizes it, preserving transparency, and packages the icon on a pale native rounded tile. Run `swift Scripts/Art/build_assets.swift` to regenerate all sizes. Generation prompt is recorded in `Resources/Artwork/prompt.txt`.
+
+File-status follow-up: the native local table now shows New path, Remote path exists, Excluded, or Not checked. This compares previewed paths only, without content equality or ancestor-conflict claims. Missing-source jobs support Locate folder and manual resume; likely account/network failures show recovery guidance.

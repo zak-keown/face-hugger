@@ -10,7 +10,7 @@ Two file surfaces share the window: local staging on the left, repository browsi
 
 Choosing or dropping a folder starts a cancellable preview scan. Include/exclude filters update the staged list and measured file/byte totals. The preview can be truncated while totals cover the full scan. A searchable repository picker supports account/organization repositories and explicit repository IDs. Folder navigation and a destination sheet choose where uploads go, including a not-yet-created subfolder.
 
-Upload is explicit; when another transfer is active, the main action queues the new job. Submission rechecks repository visibility and rejects a stale workspace configuration. The review strip currently gives a general replacement warning, not a remote collision count or per-file comparison.
+Upload is explicit; when another transfer is active, the main action queues the new job. Submission rechecks repository visibility and rejects a stale workspace configuration. The review strip gives a general replacement warning; the local table compares exact remote paths without content-equality claims.
 
 Saved pairings persist the source, repository, destination path, and filters, never tokens. Selecting one restores configuration without starting an upload and asks before replacing an already prepared source. Pairings can be saved and removed; search, rename, and active-pairing indication remain future polish.
 
@@ -25,13 +25,13 @@ Saved pairings persist the source, repository, destination path, and filters, ne
 | Recovered after relaunch | Persisted job route is shown in the shelf | Interrupted state without invented retained counters/logs; resume validates source |
 | Completed | Current remote destination is refreshed when applicable | Completion state, date, and link to Hugging Face |
 
-The shelf's Transfers popover holds queue/history selection, ordering, removal, and a route back to the active job. Activity logs are available only for the current session. A missing source reports a validation error; there is no dedicated Locate folder action yet.
+The shelf's Transfers popover holds queue/history selection, ordering, removal, and a route back to the active job. Activity logs are available only for the current session. A missing source offers Locate folder; choosing a replacement prepares the workspace and leaves the job stopped.
 
 ## Visual implementation and boundaries
 
 Adaptive source/remote colors support light and dark system appearance; the activity shelf stays dark in both. The native window uses SF Pro, native tables and menus, a small identity mascot, and gold directional/primary-action accents. The two panes expand with the window but do not have a draggable divider. The prototype's external state selector and appearance switch are not native app controls.
 
-Per-file remote collisions, content-equality checks, automatic synchronization, retained session logs/counters, and selecting uploaded files after completion are not implemented. Local/remote header and row alignment, filter-empty feedback, and explicit accessibility labels should be verified in native UI review rather than inferred from the prototype.
+Ancestor-path conflicts, content-equality checks, automatic synchronization, retained session logs/counters, and selecting uploaded files after completion are not implemented. Local/remote header and row alignment, filter-empty feedback, and explicit accessibility labels should be verified in native UI review rather than inferred from the prototype.
 
 ## Design history and verification
 
@@ -40,3 +40,5 @@ The alternate Dispatch concept proposed a permanent saved-pairing rail and a tra
 Prototype revision 5 was inspected in Safari in light and dark appearance. Its Choose folder → Upload → Stop → Resume flow, recovery without retained counters, and pairing confirmation/update passed browser interaction checks. The recovery message was widened after clipping was found. The prototype uses fixed sample files and cannot alter an account; its local copy is `.superdesign/transfer-bench.html`.
 
 The native redesign builds successfully. Prototype interaction checks are not evidence of native end-to-end validation; current test and live-smoke evidence belongs in [verification.md](verification.md). Validation can use small synthetic trees, many-file fixtures, controlled subprocesses, and bounded interrupted uploads. Multi-terabyte disk capacity is not a prerequisite.
+
+File-status follow-up: the native local table now shows New path, Remote path exists, Excluded, or Not checked. This compares previewed paths only, without content equality or ancestor-conflict claims. Missing-source jobs support Locate folder and manual resume; likely account/network failures show recovery guidance.

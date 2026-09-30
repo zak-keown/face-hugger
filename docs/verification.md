@@ -37,3 +37,13 @@ The implemented two-pane workspace was tested with a 53-byte synthetic folder in
 A saved pairing survived app restart and restored the local source, private repository, and destination subfolder without starting another upload. The disposable pairing was removed. The test repository was deleted and its absence verified. Layout inspection prompted matched header baselines, table rows, and accessible icon labels.
 
 Automated additions cover saved-pairing persistence, metadata scan limits and filter parity, missing-path handling, and upload-time preflight including changed symlinks on resume.
+
+## File status and recovery follow-up
+
+Read-only comparison against `hf-internal-testing/tiny-random-bert` verified an existing `config.json` path, a new synthetic text path, and an excluded log file in the native table. No file contents were uploaded and no remote repository was changed in this pass.
+
+A synthetic queued source was moved locally. Starting that job failed local validation before launching the upload bridge. The shelf offered Locate folder; choosing the relocated folder restored its preview, filters, and destination while leaving the job stopped. The disposable queue entry was removed.
+
+New automated checks cover conservative recovery classification, comparison limits, relative paths and manifests, missing destinations versus authentication/network errors, and bounded/redacted CLI failure output. Network/authentication recovery was checked with controlled test errors, not by disrupting the machine's network or expiring real credentials.
+
+Final follow-up totals: 19 Swift tests and 41 Python tests pass; the system Python run skips one SDK parity check, while the managed runtime passes all 41. The native Debug build succeeds.

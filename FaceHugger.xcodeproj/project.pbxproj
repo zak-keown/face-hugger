@@ -11,6 +11,7 @@
 		298481F80C2635E8BA816699 /* UploadQueueControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */; };
 		33D0E52753A98C9585966907 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2050DFC39D4E98D1893B50F /* Services.swift */; };
 		386B6880ECC2143F963A85DF /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B49DCA59F65A1B0D8E253451 /* Sheets.swift */; };
+		4019F2083B4CC0FD41A6F587 /* Recovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE1287B05FE8DAFFA3005AB3 /* Recovery.swift */; };
 		44C49A71382B06A9FC2A17DF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 551CCA4B4D77240C93F7DE7F /* Assets.xcassets */; };
 		56918ED302092DB1B2230A57 /* Staging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F4A81CCDC3EEFA5352E7B6 /* Staging.swift */; };
 		5D3403C6423FB92F0D77A13F /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4429FC49D860F2CEB1BA756 /* AppModel.swift */; };
@@ -42,6 +43,7 @@
 		D441123AB181F9E22F234FDA /* Pairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pairing.swift; sourceTree = "<group>"; };
 		DBFFB7614BA91DFE1FAACA70 /* TransferShelf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferShelf.swift; sourceTree = "<group>"; };
 		E04D4F232BBF187F37D6ED3F /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		EE1287B05FE8DAFFA3005AB3 /* Recovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recovery.swift; sourceTree = "<group>"; };
 		FB41A3FCE9550CCDF44C9C85 /* bridge.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = bridge.py; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -51,6 +53,7 @@
 			children = (
 				CEEA1D44DC5B7FFD67051296 /* Models.swift */,
 				D441123AB181F9E22F234FDA /* Pairing.swift */,
+				EE1287B05FE8DAFFA3005AB3 /* Recovery.swift */,
 				A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */,
 			);
 			name = FaceHuggerCore;
@@ -182,6 +185,7 @@
 				77C0E3775BF2F6CB2CE83C5B /* MainView.swift in Sources */,
 				0567DC6C5094F13912B74184 /* Models.swift in Sources */,
 				F47E4754D8362D313622328B /* Pairing.swift in Sources */,
+				4019F2083B4CC0FD41A6F587 /* Recovery.swift in Sources */,
 				6245C0905AE4F4A28AEEFFE2 /* RepoBrowser.swift in Sources */,
 				33D0E52753A98C9585966907 /* Services.swift in Sources */,
 				386B6880ECC2143F963A85DF /* Sheets.swift in Sources */,
