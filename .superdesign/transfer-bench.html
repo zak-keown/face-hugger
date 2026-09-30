@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Hugger - Transfer Bench Redesign</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    body {
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button:focus-visible, input:focus-visible { outline: 3px solid #3689BE; outline-offset: 3px; }
+    .dark button:focus-visible, .dark input:focus-visible { outline-color: #86C6EE; }
+    button:disabled { cursor: not-allowed; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+      ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(37, 52, 67, 0.15);
+      border-radius: 6px;
+      border: 3px solid transparent;
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(37, 52, 67, 0.25);
+      border: 3px solid transparent;
+      background-clip: padding-box;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    
+    /* View transitions */
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: 0.3s;
+    }
+  </style>
+</head>
+<body>
+<div id="prototype-root" class="flex flex-col items-center min-h-screen text-ink dark:text-dark-primary transition-colors duration-200">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            porcelain: '#F5F3EE',
+            cloud: '#F8FAFC',
+            ink: '#253443',
+            gold: '#F6C845',
+            blue: '#3689BE',
+            secondary: '#566371',
+            'dark-porcelain': '#292B2C',
+            'dark-cloud': '#252D35',
+            'dark-title': '#303438',
+            'dark-dock': '#1C252E',
+            'dark-primary': '#EDF0F2',
+            'dark-secondary': '#BAC4CD',
+            'dark-divider': '#43505B',
+            'dark-activity-blue': '#86C6EE',
+            'dark-success': '#8BD5A3',
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Preview Controls -->
+  <div class="w-full max-w-[1240px] px-4 py-4 flex items-center justify-between z-50 relative">
+    <div class="flex items-center gap-4">
+      <span class="text-xs font-semibold text-gray-500">Interactive Concept · Sample Files</span>
+      <div class="h-4 w-px bg-gray-300 dark:bg-gray-700"></div>
+      <div class="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <button onclick="setState('first')" id="btn-state-first" class="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-ink dark:text-white">First upload</button>
+        <button onclick="setState('ready')" id="btn-state-ready" class="px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300">Ready</button>
+        <button onclick="setState('stopped')" id="btn-state-stopped" class="px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300">Stopped</button>
+        <button onclick="setState('recovered')" id="btn-state-recovered" class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">After relaunch</button>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-500">Appearance:</span>
+      <button onclick="toggleDark()" id="btn-theme" aria-label="Toggle light and dark appearance" aria-pressed="false" class="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-xs font-medium flex items-center gap-1.5">
+        <iconify-icon icon="lucide:moon" class="hidden dark:block"></iconify-icon>
+        <iconify-icon icon="lucide:sun" class="block dark:hidden"></iconify-icon>
+        <span class="hidden dark:inline">Dark</span>
+        <span class="inline dark:hidden">Light</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- App Window Frame -->
+  <div class="w-[1240px] max-w-[calc(100vw-32px)] h-[760px] bg-white dark:bg-dark-title rounded-xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)] flex flex-col border border-black/10 dark:border-white/10 relative mx-auto transition-colors duration-200">
+    
+    <!-- Titlebar (52px) -->
+    <div class="h-[52px] bg-gradient-to-b from-[#fdfdfd] to-[#f4f4f4] dark:from-dark-title dark:to-dark-title border-b border-[#d1d1d1] dark:border-dark-divider flex items-center px-4 shrink-0 justify-between select-none relative z-40">
+      <!-- Left: Traffic Lights & Identity -->
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+          <div class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+          <div class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <img src="https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/016e36f9-f366-4c98-836f-c9bbf5783746/brand-assets/Resources-Assets.xcassets-Hugger.imageset-hugger.png/hugger.png" alt="Face Hugger" class="w-6 h-6 object-contain drop-shadow-sm">
+          <span class="font-medium text-[13px] text-ink dark:text-dark-primary">Face Hugger</span>
+        </div>
+      </div>
+
+      <!-- Right: Controls -->
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <button onclick="togglePairings()" class="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#3a3f45] border border-[#d1d1d1] dark:border-[#525a63] rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-[#434950] active:bg-gray-100 dark:active:bg-[#33383d] text-ink dark:text-dark-primary font-medium" id="btn-pairings" aria-expanded="false" aria-controls="popover-pairings">
+            <iconify-icon icon="lucide:link-2" class="text-[14px] text-secondary dark:text-dark-secondary"></iconify-icon>
+            <span>Pairings</span>
+          </button>
+          <!-- Pairings Popover -->
+          <div id="popover-pairings" role="dialog" aria-label="Sample pairings" class="hidden absolute right-0 top-full mt-2 w-72 bg-white dark:bg-[#3a3f45] rounded-lg shadow-xl border border-black/10 dark:border-white/10 z-50 p-2">
+             <div class="text-xs font-medium text-secondary dark:text-dark-secondary px-2 py-1.5">Saved pairings</div>
+             <button onclick="choosePairing('rena')" class="w-full text-left px-2 py-2 rounded hover:bg-ink/5 dark:hover:bg-white/5 flex flex-col gap-1">
+               <span class="font-medium text-[13px]">Rena checkpoints</span>
+               <span class="text-[12px] text-secondary dark:text-dark-secondary truncate">~/Documents/ML/rena-checkpoint → zakkeown/rena-7b</span>
+             </button>
+             <button onclick="choosePairing('eval')" class="w-full text-left px-2 py-2 rounded hover:bg-ink/5 dark:hover:bg-white/5 flex flex-col gap-1 mt-1">
+               <span class="font-medium text-[13px]">Evaluation results</span>
+               <span class="text-[12px] text-secondary dark:text-dark-secondary truncate">~/Data/eval-results-v2 → zakkeown/evals</span>
+             </button>
+             <div class="h-px bg-black/10 dark:bg-white/10 my-1 mx-2"></div>
+             <div id="pairing-confirm" class="hidden p-2 text-[12px]" aria-live="polite"></div>
+             <div id="saved-pairings"></div>
+             <button id="save-pairing" onclick="savePairing()" class="w-full text-left px-2 py-1.5 rounded hover:bg-ink/5 dark:hover:bg-white/5 text-[12px] font-medium text-blue dark:text-dark-activity-blue">
+               Save current pairing for this session
+             </button>
+          </div>
+        </div>
+        <div class="h-4 w-px bg-[#d1d1d1] dark:bg-dark-divider"></div>
+        <button class="flex items-center gap-2 text-ink dark:text-dark-primary hover:text-black dark:hover:text-white" id="btn-account" disabled title="Sample account; account settings are not part of this prototype" aria-label="Sample account zakkeown; settings unavailable in prototype">
+          <div class="w-5 h-5 rounded-full bg-ink dark:bg-white flex items-center justify-center text-[12px] font-bold text-white dark:text-ink">Z</div>
+          <span class="font-medium">zakkeown</span>
+          <iconify-icon icon="lucide:chevron-down" class="text-[14px] text-secondary dark:text-dark-secondary"></iconify-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col min-h-0 relative">
+      
+      <!-- Split Panes -->
+      <div class="flex-1 flex relative overflow-hidden">
+        
+        <!-- Left Pane: Local -->
+        <div class="flex-1 bg-porcelain dark:bg-dark-porcelain flex flex-col min-w-0 transition-colors">
+          <div class="px-8 pt-6 pb-4 h-[136px] shrink-0">
+            <div class="text-[13px] text-secondary dark:text-dark-secondary font-medium mb-1">On this Mac</div>
+            
+            <!-- Source Header: Dynamic Content based on State -->
+            <div id="local-header-first" class="block">
+              <div class="flex items-center gap-3">
+                <iconify-icon icon="lucide:folder-dashed" class="text-2xl text-secondary/50 dark:text-dark-secondary/50"></iconify-icon>
+                <h1 class="text-[25px] font-semibold text-secondary dark:text-dark-secondary tracking-tight truncate">Choose a local folder</h1>
+              </div>
+              <div class="mt-2">
+                <button onclick="setState('ready')" class="bg-blue hover:bg-[#2e74a1] text-white px-3 py-1.5 rounded text-[13px] font-medium transition-colors shadow-sm">
+                  Choose folder...
+                </button>
+              </div>
+            </div>
+
+            <div id="local-header-ready" class="hidden">
+              <div class="flex items-center gap-3">
+                <iconify-icon icon="lucide:folder" class="text-2xl text-blue"></iconify-icon>
+                <h1 class="text-[25px] font-semibold text-ink dark:text-dark-primary tracking-tight truncate" id="local-name">rena-checkpoint</h1>
+              </div>
+              <div class="text-[12px] text-secondary dark:text-dark-secondary mt-2 flex items-center gap-2">
+                <span id="local-path">~/Documents/ML/rena-checkpoint</span>
+                <button onclick="togglePairings()" aria-label="Choose a sample local folder pairing" class="text-blue dark:text-dark-activity-blue hover:underline">Choose...</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- File Table (Local) -->
+          <div class="flex-1 overflow-y-auto border-t border-ink/10 dark:border-white/10 relative">
+            <table class="w-full text-left border-collapse">
+              <thead class="sticky top-0 bg-porcelain/95 dark:bg-dark-porcelain/95 backdrop-blur z-10 border-b border-ink/10 dark:border-white/10 text-[12px] text-secondary dark:text-dark-secondary">
+                <tr>
+                  <th class="font-medium py-2 px-8 w-8"></th>
+                  <th class="font-medium py-2 px-2">Name</th>
+                  <th class="font-medium py-2 px-8 text-right">Size</th>
+                </tr>
+              </thead>
+              
+              <!-- Empty State -->
+              <tbody id="local-table-first" class="text-[13px]">
+                <tr>
+                  <td colspan="3" class="px-8 py-16 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                      <iconify-icon icon="lucide:folder-input" class="text-[48px] text-secondary dark:text-dark-secondary mb-3"></iconify-icon>
+                      <p class="text-secondary dark:text-dark-secondary">Drop a folder here to begin</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+
+              <!-- Populated State -->
+              <tbody id="local-table-ready" class="hidden text-[13px]">
+                <tr class="h-[32px] hover:bg-ink/5 dark:hover:bg-white/5 group">
+                  <td class="px-8 py-1">
+                    <input type="checkbox" disabled aria-label="config.json: fixed sample selection" title="Fixed sample selection for this prototype" checked class="accent-gold">
+                  </td>
+                  <td class="px-2 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-json" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span>config.json</span>
+                  </td>
+                  <td class="px-8 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">2.4 KB</td>
+                </tr>
+                <tr class="h-[32px] hover:bg-ink/5 dark:hover:bg-white/5 group">
+                  <td class="px-8 py-1">
+                    <input type="checkbox" disabled aria-label="tokenizer.json: fixed sample selection" title="Fixed sample selection for this prototype" checked class="accent-gold">
+                  </td>
+                  <td class="px-2 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-json" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span>tokenizer.json</span>
+                  </td>
+                  <td class="px-8 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">1.8 MB</td>
+                </tr>
+                <tr class="h-[32px] hover:bg-ink/5 dark:hover:bg-white/5 group">
+                  <td class="px-8 py-1">
+                    <input type="checkbox" disabled aria-label="model-00001-of-00002.safetensors: fixed sample selection" title="Fixed sample selection for this prototype" checked class="accent-gold">
+                  </td>
+                  <td class="px-2 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-binary" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span>model-00001-of-00002.safetensors</span>
+                  </td>
+                  <td class="px-8 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">1.9 GB</td>
+                </tr>
+                <tr class="h-[32px] hover:bg-ink/5 dark:hover:bg-white/5 group">
+                  <td class="px-8 py-1">
+                    <input type="checkbox" disabled aria-label="model-00002-of-00002.safetensors: fixed sample selection" title="Fixed sample selection for this prototype" checked class="accent-gold">
+                  </td>
+                  <td class="px-2 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-binary" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span>model-00002-of-00002.safetensors</span>
+                  </td>
+                  <td class="px-8 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">1.9 GB</td>
+                </tr>
+                <tr class="h-[32px] hover:bg-ink/5 dark:hover:bg-white/5 group opacity-50">
+                  <td class="px-8 py-1">
+                    <input type="checkbox" disabled aria-label=".DS_Store: fixed sample selection" title="Fixed sample selection for this prototype" class="accent-gold">
+                  </td>
+                  <td class="px-2 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-text" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span class="line-through">.DS_Store</span>
+                  </td>
+                  <td class="px-8 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">6 KB</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Center Coupling -->
+        <div class="absolute left-1/2 top-[4.5rem] -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center">
+           <div class="w-8 h-8 rounded-full bg-gold text-ink flex items-center justify-center shadow-md border border-black/5">
+             <iconify-icon icon="lucide:arrow-right" class="text-lg font-bold"></iconify-icon>
+           </div>
+        </div>
+        <!-- Center Seam Line -->
+        <div class="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-ink/10 dark:via-white/10 to-ink/10 dark:to-white/10 z-10"></div>
+
+        <!-- Right Pane: Remote -->
+        <div class="flex-1 bg-cloud dark:bg-dark-cloud flex flex-col min-w-0 transition-colors">
+          <div class="px-8 pt-6 pb-4 h-[136px] shrink-0">
+            <div class="text-[13px] text-secondary dark:text-dark-secondary font-medium mb-1">On Hugging Face</div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <iconify-icon icon="lucide:database" class="text-2xl text-secondary dark:text-dark-secondary"></iconify-icon>
+                <h1 class="text-[25px] font-semibold text-ink dark:text-dark-primary tracking-tight truncate" id="remote-name">rena-7b</h1>
+              </div>
+              <button onclick="togglePairings()" aria-label="Choose a sample destination pairing" class="flex items-center gap-2 bg-white dark:bg-[#30363d] px-2 py-1 rounded border border-ink/10 dark:border-white/10 text-[12px] font-medium cursor-pointer shadow-sm text-ink dark:text-dark-primary">
+                <span id="remote-repo">zakkeown/rena-7b</span>
+                <iconify-icon icon="lucide:chevrons-up-down" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+              </button>
+            </div>
+            <div class="text-[12px] text-secondary dark:text-dark-secondary mt-2 flex items-center gap-2">
+              <span class="bg-ink/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-ink dark:text-dark-primary font-medium border border-ink/5 dark:border-white/5">Private</span>
+              <span>·</span>
+              <span class="flex items-center gap-1"><iconify-icon icon="lucide:folder-open" class="text-[14px]"></iconify-icon> <span id="remote-path">/ (root)</span></span>
+              <button onclick="togglePairings()" aria-label="Choose a sample destination path pairing" class="text-blue dark:text-dark-activity-blue hover:underline ml-1">Choose path...</button>
+            </div>
+          </div>
+
+          <!-- File Table (Remote) -->
+          <div class="flex-1 overflow-y-auto border-t border-ink/10 dark:border-white/10">
+            <table class="w-full text-left border-collapse">
+              <thead class="sticky top-0 bg-cloud/95 dark:bg-dark-cloud/95 backdrop-blur z-10 border-b border-ink/10 dark:border-white/10 text-[12px] text-secondary dark:text-dark-secondary">
+                <tr>
+                  <th class="font-medium py-2 px-8">Name</th>
+                  <th class="font-medium py-2 px-2 text-right">Size</th>
+                  <th class="font-medium py-2 px-8 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody class="text-[13px]">
+                <tr class="h-[32px] hover:bg-ink/5 dark:hover:bg-white/5">
+                  <td class="px-8 py-1 flex items-center gap-2 text-blue dark:text-dark-activity-blue">
+                    <iconify-icon icon="lucide:file-json"></iconify-icon>
+                    <span>config.json</span>
+                  </td>
+                  <td class="px-2 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">2.3 KB</td>
+                  <td class="px-8 py-1 text-right text-secondary dark:text-dark-secondary text-[12px]" id="remote-status-config">Same path</td>
+                </tr>
+                <tr class="h-[32px] hover:bg-ink/5 dark:hover:bg-white/5">
+                  <td class="px-8 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-text" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span>README.md</span>
+                  </td>
+                  <td class="px-2 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">12 KB</td>
+                  <td class="px-8 py-1 text-right text-secondary dark:text-dark-secondary text-[12px]">Existing</td>
+                </tr>
+                <!-- Ghost entries for files to be uploaded (Ready/Stopped states) -->
+                <tr class="h-[32px] bg-gold/5 dark:bg-gold/5 hidden ghost-row">
+                  <td class="px-8 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-json" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span class="italic font-medium">tokenizer.json</span>
+                  </td>
+                  <td class="px-2 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">--</td>
+                  <td class="px-8 py-1 text-right text-ink dark:text-dark-primary font-medium text-[12px]">Will add</td>
+                </tr>
+                <tr class="h-[32px] bg-gold/5 dark:bg-gold/5 hidden ghost-row">
+                  <td class="px-8 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-binary" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span class="italic font-medium">model-00001-of-00002.safetensors</span>
+                  </td>
+                  <td class="px-2 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">--</td>
+                  <td class="px-8 py-1 text-right text-ink dark:text-dark-primary font-medium text-[12px]">Will add</td>
+                </tr>
+                <tr class="h-[32px] bg-gold/5 dark:bg-gold/5 hidden ghost-row">
+                  <td class="px-8 py-1 flex items-center gap-2 text-ink dark:text-dark-primary">
+                    <iconify-icon icon="lucide:file-binary" class="text-secondary dark:text-dark-secondary"></iconify-icon>
+                    <span class="italic font-medium">model-00002-of-00002.safetensors</span>
+                  </td>
+                  <td class="px-2 py-1 text-right text-secondary dark:text-dark-secondary tabular-nums text-[12px]">--</td>
+                  <td class="px-8 py-1 text-right text-ink dark:text-dark-primary font-medium text-[12px]">Will add</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Review Bar -->
+      <div class="h-16 bg-white dark:bg-dark-title border-t border-ink/10 dark:border-white/10 flex items-center justify-between px-8 shrink-0 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] transition-colors">
+        <div class="flex items-center gap-6 text-[13px]">
+          <div id="summary-text" class="font-semibold text-ink dark:text-dark-primary">0 files selected</div>
+          <div id="summary-matching" class="flex items-center gap-1.5 text-secondary dark:text-dark-secondary hidden">
+            <iconify-icon icon="lucide:info" class="text-[14px]"></iconify-icon>
+            <span>1 matching path may be replaced</span>
+          </div>
+          <div class="relative">
+            <button onclick="toggleFilters()" class="text-blue dark:text-dark-activity-blue font-medium hover:underline flex items-center gap-1" id="btn-filters" aria-expanded="false" aria-controls="popover-filters">
+              <iconify-icon icon="lucide:filter" class="text-[14px]"></iconify-icon>
+              Filters
+            </button>
+            <!-- Filters Popover -->
+            <div id="popover-filters" class="hidden absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-[#3a3f45] rounded-lg shadow-xl border border-black/10 dark:border-white/10 z-50 p-4">
+              <div class="text-[13px] font-semibold text-ink dark:text-dark-primary mb-2">Sample file filters</div>
+              <div class="space-y-3">
+                <div>
+                   <label class="text-[12px] text-secondary dark:text-dark-secondary font-medium">Include</label>
+                   <div class="text-[13px] mt-1 text-ink dark:text-dark-primary">* (All files)</div>
+                </div>
+                <div>
+                   <label class="text-[12px] text-secondary dark:text-dark-secondary font-medium">Exclude</label>
+                   <div class="bg-ink/5 dark:bg-white/5 rounded p-1.5 mt-1 font-mono text-[12px] text-ink dark:text-dark-primary">
+                     .DS_Store<br>**/.DS_Store
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button id="btn-upload-action" class="bg-ink/10 dark:bg-white/10 text-ink/50 dark:text-white/75 px-6 py-2 rounded-md shadow-sm font-bold transition-colors cursor-not-allowed" disabled>
+          Choose a local folder
+        </button>
+      </div>
+
+    </div>
+    
+    <!-- Activity Shelf -->
+    <div id="activity-shelf" class="h-[64px] bg-ink dark:bg-dark-dock text-white shrink-0 flex flex-col transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]">
+      <div class="px-8 py-4 border-b border-white/10 flex items-center justify-between shrink-0 h-[64px]">
+         <h2 id="activity-headline" aria-live="polite" class="font-medium text-[14px] text-white/90">No transfers yet</h2>
+      </div>
+      
+      <!-- Detailed Content (Shown in stopped state) -->
+      <div id="activity-content" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 opacity-0 transition-opacity duration-200 hidden">
+        <div class="flex items-start gap-8">
+          <!-- Source to Repo -->
+          <div id="shelf-route" class="w-64 shrink-0">
+            <div class="font-medium text-[14px] mb-1 truncate" id="shelf-local-name">rena-checkpoint</div>
+            <div class="flex items-center gap-2 text-[12px] text-white/75">
+              <span id="shelf-local-path" class="truncate">~/Documents/ML/rena...</span>
+              <iconify-icon icon="lucide:arrow-right" class="text-gold"></iconify-icon>
+              <span id="shelf-remote-path" class="truncate">zakkeown/rena-7b</span>
+            </div>
+            <div id="resume-explanation" class="mt-3 text-[12px] text-white/75 leading-tight">
+              Committed files remain on Hugging Face. Resume checks the source again.
+            </div>
+          </div>
+
+          <!-- Progress Counters -->
+          <div id="activity-counters" class="flex-1 flex flex-col pt-0.5">
+            <div class="text-[12px] text-white/75 font-medium mb-2" id="counter-caption">Last reported this session</div>
+            <div class="flex items-start gap-12">
+              <div class="flex flex-col gap-1">
+                <div class="text-[12px] text-white/75 font-semibold">Prepared</div>
+                <div class="tabular-nums text-[14px] text-white/90">4 / 4</div>
+              </div>
+              <div class="flex flex-col gap-1">
+                <div class="text-[12px] text-white/75 font-semibold">Uploaded or reused</div>
+                <div class="tabular-nums text-[14px] text-[#86C6EE]">2 / 4</div>
+                <div class="w-32 h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
+                  <div class="h-full bg-blue w-[50%] rounded-full"></div>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1">
+                <div class="text-[12px] text-white/75 font-semibold">Committed</div>
+                <div class="tabular-nums text-[14px] text-white/90">1</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-col items-end gap-3 shrink-0 pt-1 ml-auto">
+            <button id="btn-shelf-action" onclick="setState('running')" class="bg-gold hover:bg-[#eab308] text-ink font-bold px-4 py-1.5 rounded-md text-[13px] shadow-sm transition-colors">
+              Resume upload
+            </button>
+            <div class="relative">
+              <button id="btn-logs" aria-expanded="false" aria-controls="popover-logs" onclick="toggleLogs()" class="text-gold text-[12px] hover:underline flex items-center gap-1">
+                Log <iconify-icon icon="lucide:chevron-down" class="text-[14px]"></iconify-icon>
+              </button>
+              <div id="popover-logs" class="hidden absolute bottom-full right-0 mb-2 w-96 bg-[#1e293b] rounded-lg shadow-xl border border-white/10 z-50 p-3 text-[12px] font-mono text-white/80 max-h-48 overflow-y-auto">
+                 <div>[info] Checking remote repository state</div>
+                 <div>[info] 1 matching path found: config.json</div>
+                 <div>[info] Preparing 4 files for transfer</div>
+                 <div>[info] Uploading tokenizer.json (Chunk 1/4)</div>
+                 <div>[info] Uploading tokenizer.json (Chunk 2/4)</div>
+                 <div class="text-red-400">[warn] Transfer stopped by user</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Deterministic sample only. No filesystem, account, or upload requests occur.
+    let currentState = 'first';
+    let currentPairing = 'rena';
+    let pendingPairing = null;
+    const savedPairings = new Set();
+    const pairings = {
+      rena: { name: 'Rena checkpoints', local: 'rena-checkpoint', source: '~/Documents/ML/rena-checkpoint', repo: 'zakkeown/rena-7b', remote: 'rena-7b', path: '/ (root)' },
+      eval: { name: 'Evaluation results', local: 'eval-results-v2', source: '~/Data/eval-results-v2', repo: 'zakkeown/evals', remote: 'evals', path: '/results/v2' }
+    };
+    const el = id => document.getElementById(id);
+    function visible(id, show) { el(id).classList.toggle('hidden', !show); }
+    function closePopover(name) {
+      visible('popover-' + name, false);
+      el('btn-' + name).setAttribute('aria-expanded', 'false');
+    }
+    function togglePopover(name) {
+      const open = el('popover-' + name).classList.contains('hidden');
+      ['pairings', 'filters', 'logs'].forEach(closePopover);
+      visible('popover-' + name, open);
+      el('btn-' + name).setAttribute('aria-expanded', String(open));
+    }
+    function togglePairings() { togglePopover('pairings'); }
+    function toggleFilters() { togglePopover('filters'); }
+    function toggleLogs() { if (currentState !== 'recovered') togglePopover('logs'); }
+    function toggleDark() {
+      const dark = document.documentElement.classList.toggle('dark');
+      el('btn-theme').setAttribute('aria-pressed', String(dark));
+    }
+    document.addEventListener('click', e => {
+      ['pairings', 'filters', 'logs'].forEach(name => {
+        if (!e.target.closest('#popover-' + name) && !e.target.closest('#btn-' + name) && !e.target.closest('[onclick="togglePairings()"]')) closePopover(name);
+      });
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        const open = ['pairings', 'filters', 'logs'].find(name => !el('popover-' + name).classList.contains('hidden'));
+        ['pairings', 'filters', 'logs'].forEach(closePopover);
+        if (open) el('btn-' + open).focus();
+      }
+    });
+    function updatePairing() {
+      const p = pairings[currentPairing];
+      [['local-name', p.local], ['local-path', p.source], ['remote-name', p.remote], ['remote-repo', p.repo], ['remote-path', p.path], ['shelf-local-name', p.local], ['shelf-local-path', p.source], ['shelf-remote-path', p.repo + ' ' + p.path]].forEach(([id, value]) => { el(id).textContent = value; el(id).title = value; });
+      el('save-pairing').disabled = savedPairings.has(currentPairing);
+      el('save-pairing').textContent = savedPairings.has(currentPairing) ? 'Pairing saved for this session' : 'Save current pairing for this session';
+    }
+    function choosePairing(key) {
+      if (currentState === 'running') {
+        el('pairing-confirm').textContent = 'Stop the sample upload before changing its pairing.';
+        visible('pairing-confirm', true); return;
+      }
+      if (key !== currentPairing && currentState !== 'first') {
+        pendingPairing = key;
+        el('pairing-confirm').innerHTML = '<p class="mb-2">Use ' + pairings[key].name + '? This replaces the current prepared route. No upload will start.</p><div class="flex gap-3"><button class="underline" onclick="keepPairing()">Keep current</button><button class="font-semibold underline" onclick="applyPairing(pendingPairing)">Use pairing</button></div>';
+        visible('pairing-confirm', true); return;
+      }
+      applyPairing(key);
+    }
+    function keepPairing() { pendingPairing = null; visible('pairing-confirm', false); }
+    function applyPairing(key) {
+      currentPairing = key; keepPairing(); updatePairing(); setState('ready'); closePopover('pairings');
+    }
+    function savePairing() {
+      savedPairings.add(currentPairing);
+      const button = document.createElement('button');
+      button.className = 'w-full text-left px-2 py-2 rounded hover:bg-ink/5 dark:hover:bg-white/5 text-[12px]';
+      const key = currentPairing;
+      button.textContent = pairings[key].name + ' — saved this session';
+      button.onclick = () => choosePairing(key);
+      el('saved-pairings').appendChild(button); updatePairing();
+    }
+    function setState(state) {
+      if (!['first', 'ready', 'running', 'stopped', 'recovered'].includes(state)) return;
+      currentState = state;
+      ['pairings', 'filters', 'logs'].forEach(closePopover);
+      keepPairing(); updatePairing();
+      ['first', 'ready', 'stopped', 'recovered'].forEach(s => {
+        const btn = el('btn-state-' + s);
+        btn.className = 'px-3 py-1.5 text-xs font-medium ' + (s === state ? 'bg-gray-100 dark:bg-gray-700 text-ink dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300');
+        btn.setAttribute('aria-pressed', String(s === state));
+      });
+      const first = state === 'first', ready = state === 'ready', running = state === 'running', recovered = state === 'recovered';
+      const active = !first && !ready;
+      visible('local-header-first', first); visible('local-table-first', first);
+      visible('local-header-ready', !first); visible('local-table-ready', !first);
+      document.querySelectorAll('.ghost-row').forEach(r => r.classList.toggle('hidden', first || recovered));
+      el('summary-text').textContent = first ? '0 files selected' : '4 files / 3.8 GB selected';
+      visible('summary-matching', !first && !recovered);
+      el('remote-status-config').textContent = first ? 'Existing' : recovered ? 'Recheck on resume' : 'Same path';
+      const upload = el('btn-upload-action');
+      upload.disabled = !ready;
+      upload.textContent = first ? 'Choose a local folder' : ready ? 'Upload 4 files' : running ? 'Upload in progress' : recovered ? 'Upload interrupted' : 'Upload stopped';
+      upload.className = 'px-6 py-2 rounded-md shadow-sm font-bold transition-colors ' + (ready ? 'bg-gold hover:bg-[#eab308] text-ink cursor-pointer' : 'bg-ink/10 dark:bg-white/10 text-secondary dark:text-dark-secondary cursor-not-allowed');
+      upload.onclick = () => setState('running');
+      el('activity-shelf').className = (active ? 'h-[200px]' : 'h-[64px]') + ' bg-ink dark:bg-dark-dock text-white shrink-0 flex flex-col transition-all duration-300';
+      el('activity-headline').textContent = first || ready ? 'No transfers yet' : running ? 'Uploading · sample activity' : recovered ? 'Upload interrupted' : 'Upload stopped';
+      visible('activity-content', active);
+      el('activity-content').classList.remove('opacity-0');
+      visible('activity-counters', !recovered);
+      el('shelf-route').className = recovered ? 'flex-1 min-w-0 max-w-[680px]' : 'w-64 shrink-0';
+      el('counter-caption').textContent = running ? 'Live sample activity' : 'Last reported this session';
+      el('resume-explanation').textContent = recovered ? 'This upload was interrupted. Resume checks your files and continues. Committed files remain on Hugging Face.' : 'Committed files remain on Hugging Face. Resume checks the source again.';
+      const action = el('btn-shelf-action');
+      action.textContent = running ? 'Stop upload' : 'Resume upload';
+      action.onclick = () => setState(running ? 'stopped' : 'running');
+      el('btn-logs').disabled = recovered;
+      el('btn-logs').classList.toggle('text-gold', !recovered);
+      el('btn-logs').classList.toggle('text-white/75', recovered);
+      el('btn-logs').textContent = recovered ? 'Logs unavailable after relaunch' : 'Log';
+      el('popover-logs').innerHTML = recovered ? '' : '<div>[sample] Checking remote repository state</div><div>[sample] Preparing 4 files for transfer</div><div>[sample] Uploaded or reused 2 of 4 files</div><div>[sample] 1 file committed</div>' + (running ? '<div>[sample] Uploading model shard…</div>' : '<div>[sample] Transfer stopped by user</div>');
+    }
+    setState('first');
+  </script>
+</div>
+</body>
+</html>

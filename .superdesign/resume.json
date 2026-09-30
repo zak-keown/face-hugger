@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "main-workspace": {
+      "targetKind": "existing-ui",
+      "projectId": "016e36f9-f366-4c98-836f-c9bbf5783746",
+      "baselineDraftId": "4fcedcb6-cbec-4ae3-8980-74b650b0701f",
+      "activeDraftId": "3f6d6851-b4e3-4d68-a1bf-f8a378ccad65",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [
+        "Resources-Assets.xcassets-Hugger.imageset-hugger.png"
+      ],
+      "brandAssets": {
+        "logo": {
+          "assetKey": "Resources-Assets.xcassets-Hugger.imageset-hugger.png",
+          "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/016e36f9-f366-4c98-836f-c9bbf5783746/brand-assets/Resources-Assets.xcassets-Hugger.imageset-hugger.png/hugger.png",
+          "sourcePath": "Resources/Assets.xcassets/Hugger.imageset/hugger.png"
+        }
+      },
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "Sources/FaceHugger/MainView.swift",
+        "Sources/FaceHugger/RepoBrowser.swift",
+        "Sources/FaceHugger/Sheets.swift",
+        "Sources/FaceHugger/FaceHuggerApp.swift"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "065d454220cf9348a85249cbddffc3ddc57454a94070319b7cea513de914dbaf",
+        "Sources/FaceHugger/MainView.swift": "0f9fc9b03b75ed53405186c8cbb34fabf7d5f90a4d806e0cc8f8fd06db1e66fd",
+        "Sources/FaceHugger/RepoBrowser.swift": "77864d3309f9bbc879f3e5e516200bfba6554e9b81579be2012acf2b0b0dd760",
+        "Sources/FaceHugger/Sheets.swift": "36f60da210ea498c2552c71e9bf1f171290aaa81ebc2c5864256c7861d94cb92",
+        "Sources/FaceHugger/FaceHuggerApp.swift": "ef25b9dd649af921d940bffbd27ccd6a2d6e9bbe8024b45e2990a074fc62c68a"
+      },
+      "components": [],
+      "drafts": {
+        "4fcedcb6-cbec-4ae3-8980-74b650b0701f": {
+          "title": "Original queue",
+          "visualDirection": "Original generic queue, rejected; branch selection pending",
+          "currentVersion": 1
+        },
+        "3f6d6851-b4e3-4d68-a1bf-f8a378ccad65": {
+          "title": "Transfer Bench",
+          "visualDirection": "Selected Transfer Bench: paired file surfaces and slate activity shelf, with saved pairings as secondary controls",
+          "parentDraftId": "4fcedcb6-cbec-4ae3-8980-74b650b0701f",
+          "currentVersion": 5
+        },
+        "79843fc8-8d12-493b-921a-0fc9db3b1db8": {
+          "title": "Dispatch",
+          "visualDirection": "Saved folder-repository pairings and transfer manifest",
+          "parentDraftId": "4fcedcb6-cbec-4ae3-8980-74b650b0701f",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-09-30T16:02:43.704723+00:00"
+    }
+  }
+}
