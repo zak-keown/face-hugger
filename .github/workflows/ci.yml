@@ -28,6 +28,6 @@ jobs:
           python3 --version
       - name: Install locked upload dependencies
         run: |
-          uv pip sync --python .venv/bin/python --require-hashes --only-binary=:all: -r Resources/runtime-requirements.txt
+          uv pip sync --python .venv/bin/python --require-hashes --only-binary=:all: Resources/runtime-requirements.txt
       - name: Test and build
         run: Scripts/check.sh --build
