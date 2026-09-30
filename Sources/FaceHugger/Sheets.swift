@@ -7,21 +7,11 @@ struct SettingsSheet: View {
     @State private var token = ""
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Account and upload tools").font(.title2.weight(.semibold))
+            Text("Account and uploads").font(.title2.weight(.semibold))
             Form {
                 Section("Upload tools") {
-                    if AppPaths.isStoreEdition {
-                        Label(model.runtimeReady ? "Upload tools are included" : "Upload tools are missing", systemImage: model.runtimeReady ? "checkmark.circle.fill" : "exclamationmark.triangle")
-                        Text("Upload tools are updated with the app through the App Store.").font(.caption).foregroundStyle(.secondary)
-                    } else {
-                    Text("One-time setup downloads Python and Hugging Face tools. An internet connection is required; no terminal setup is needed.").font(.system(size: 12)).foregroundStyle(.secondary)
-                    Label(model.runtimeReady ? "Hugging Face tools are ready" : "Set up Hugging Face tools", systemImage: model.runtimeReady ? "checkmark.circle.fill" : "shippingbox")
-                    Text("Python and upload tools are version-pinned and installed in Face Hugger’s support folder.").font(.caption).foregroundStyle(.secondary)
-                    HStack { Button(model.runtimeReady ? "Repair upload tools" : "Set up upload tools") { Task { await model.installRuntime() } }.disabled(model.installing || model.activeJob != nil); if model.installing { ProgressView().controlSize(.small) } }
-                    if !model.setupLog.isEmpty {
-                        ScrollView { Text(model.setupLog).font(.system(.caption, design: .monospaced)).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled) }.frame(height: 90)
-                    }
-                    }
+                    Label("Uploads are built in", systemImage: "checkmark.circle.fill")
+                    Text("Connect your account to upload. An internet connection is required.").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("Hugging Face account") {
                     if let identity = model.identity {
@@ -29,12 +19,12 @@ struct SettingsSheet: View {
                         Button("Remove saved account") { model.disconnect() }.disabled(model.activeJob != nil)
                     }
                     SecureField("Access token", text: $token, prompt: Text("hf_…"))
-                    Text(AppPaths.isStoreEdition ? "Use a token with write access to your target repositories. It’s stored in your Mac’s Keychain." : "Use a token with write access to your target repositories. It’s stored in your Mac’s Keychain. Leave this blank to use an existing Hugging Face CLI login.").font(.caption).foregroundStyle(.secondary)
+                    Text("Use a token with write access to your target repositories. It’s stored in your Mac’s Keychain.").font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Link("Create a token", destination: URL(string: "https://huggingface.co/settings/tokens")!)
                         Spacer()
                         if model.accountBusy { ProgressView().controlSize(.small) }
-                        Button("Connect") { Task { await model.connect(token: token.isEmpty ? nil : token); if model.identity != nil { token = "" } } }.disabled(!model.runtimeReady || model.accountBusy || model.activeJob != nil)
+                        Button("Connect") { Task { await model.connect(token: token.isEmpty ? nil : token); if model.identity != nil { token = "" } } }.disabled(model.accountBusy || model.activeJob != nil)
                     }
                 }
                 Section("While uploading") {
@@ -45,7 +35,7 @@ struct SettingsSheet: View {
             ErrorBanner(model: model)
             HStack {
                 Link("Privacy policy", destination: URL(string: "https://github.com/zak-keown/face-hugger/blob/main/docs/privacy.md")!)
-                Link("Open-source notices", destination: URL(string: "https://github.com/zak-keown/face-hugger/tree/main/Resources/ThirdParty")!)
+                Link("Open-source notices", destination: URL(string: "https://github.com/zak-keown/face-hugger/blob/main/Resources/PythonFnmatchLicense.txt")!)
                 Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
             }
         }.padding(24).frame(width: 560, height: 650)
@@ -74,7 +64,7 @@ struct CreateRepoSheet: View {
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction); Spacer()
                 if model.loading { ProgressView().controlSize(.small) }
                 Button("Create repository") { Task { await model.createRepo(name: "\(owner)/\(name)", kind: kind, isPrivate: isPrivate) } }
-                    .buttonStyle(.borderedProminent).disabled(owner.isEmpty || name.isEmpty || model.loading || !model.runtimeReady).keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent).disabled(owner.isEmpty || name.isEmpty || model.loading).keyboardShortcut(.defaultAction)
             }
         }.padding(24).frame(width: 470, height: 360).onAppear { owner = model.identity?.name ?? "" }
     }

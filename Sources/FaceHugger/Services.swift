@@ -6,23 +6,12 @@ enum AppPaths {
     static let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Face Hugger")
     #if STORE_BUILD
     static let isStoreEdition = true
-    static var python: String {
-        #if arch(arm64)
-        let architecture = "arm64"
-        #else
-        let architecture = "x86_64"
-        #endif
-        return Bundle.main.resourceURL!.appendingPathComponent("UploadRuntime.bundle/Contents/Resources/\(architecture)/python/bin/python3.12").path
-    }
     #else
     static let isStoreEdition = false
-    static let python = support.appendingPathComponent("runtime-v3/bin/python3").path
     #endif
-    static let runtimeMarker = support.appendingPathComponent("runtime-ready-v3")
-    static var runtimeReady: Bool {
-        FileManager.default.isExecutableFile(atPath: python) && (isStoreEdition || FileManager.default.fileExists(atPath: runtimeMarker.path))
-    }
-    static var bridge: String { Bundle.main.url(forResource: "bridge", withExtension: "py")!.path }
+    static let runtimeReady = true
+    static let checkpoints = support.appendingPathComponent("native-uploads", isDirectory: true)
+
 }
 
 enum CredentialStore {
@@ -50,87 +39,37 @@ enum CredentialStore {
     }
 }
 
-final class CommandProcess: @unchecked Sendable {
-    private let process = Process()
+/// Owns one structured native operation; stop also handles cancellation before start.
+final class NativeOperation: @unchecked Sendable {
     private let lock = NSLock()
     private var cancelled = false
-    private let maxLineBytes: Int
-    init(maxLineBytes: Int = 128_000) { self.maxLineBytes = maxLineBytes }
+    private var cancellation: (@Sendable () -> Void)?
     func stop() {
-        lock.lock(); cancelled = true
-        if process.isRunning { process.terminate() }
-        lock.unlock()
+        let cancel = lock.withLock { cancelled = true; return cancellation }
+        cancel?()
     }
-    func run(executable: String, arguments: [String], token: String?, environmentOverrides: [String: String] = [:], onLine: @escaping @Sendable (String) -> Void) async throws -> Int32 {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .utility).async { [self] in
-                let pipe = Pipe()
-                process.executableURL = URL(fileURLWithPath: executable)
-                process.arguments = arguments
-                #if STORE_BUILD
-                var env = ["PATH": "/usr/bin:/bin", "HOME": NSHomeDirectory(),
-                           "TMPDIR": NSTemporaryDirectory(), "HF_HOME": AppPaths.support.appendingPathComponent("huggingface").path,
-                           "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1"]
-                #else
-                var env = ProcessInfo.processInfo.environment
-                #endif
-                env.merge(environmentOverrides) { _, supplied in supplied }
-                env["PYTHONUNBUFFERED"] = "1"; env["HF_HUB_DISABLE_TELEMETRY"] = "1"
-                env["HF_HUB_DISABLE_UPDATE_CHECK"] = "1"
-                if let token, !token.isEmpty { env["HF_TOKEN"] = token }
-                process.environment = env
-                process.standardOutput = pipe; process.standardError = pipe
-                process.standardInput = FileHandle.nullDevice
-                do {
-                    lock.lock()
-                    if cancelled { lock.unlock(); continuation.resume(returning: 143); return }
-                    do { try process.run() } catch { lock.unlock(); throw error }
-                    lock.unlock()
-                    var framer = JSONLineFramer(maxLineBytes: maxLineBytes)
-                    var framingError: Error?
-                    while true {
-                        let data = pipe.fileHandleForReading.availableData
-                        if data.isEmpty { break }
-                        // Continue draining after cancellation so a child cannot block on a full pipe.
-                        guard framingError == nil else { continue }
-                        do {
-                            for line in try framer.append(data) {
-                                onLine(Self.redact(String(decoding: line, as: UTF8.self), token: token))
-                            }
-                        } catch {
-                            framingError = error
-                            stop()
-                        }
-                    }
-                    if let line = framer.finish(), framingError == nil {
-                        onLine(Self.redact(String(decoding: line, as: UTF8.self), token: token))
-                    }
-                    process.waitUntilExit()
-                    if let framingError { continuation.resume(throwing: framingError) }
-                    else { continuation.resume(returning: process.terminationStatus) }
-                } catch { continuation.resume(throwing: error) }
-            }
+    func run<T: Sendable>(_ operation: @escaping @Sendable () async throws -> T) async throws -> T {
+        let task = Task.detached(priority: .utility) { try await operation() }
+        lock.withLock {
+            cancellation = { task.cancel() }
+            if cancelled { task.cancel() }
         }
-    }
-    static func redact(_ value: String, token: String?) -> String {
-        var result = value
-        if let token, !token.isEmpty { result = result.replacingOccurrences(of: token, with: "[redacted]") }
-        return result.replacingOccurrences(of: "hf_[A-Za-z0-9]+", with: "[redacted]", options: .regularExpression)
+        return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
     }
 }
 
-struct HubIdentity: Decodable, Sendable {
+struct HubIdentity: Codable, Sendable {
     var name: String
     var organizations: [String]
 }
-struct RepoResponse: Decodable, Sendable {
+struct RepoResponse: Codable, Sendable {
     var id: String
     var type: String
     var `private`: Bool
     var repo: HubRepo { HubRepo(name: id, kind: RepoKind(rawValue: type) ?? .model, isPrivate: self.private) }
 }
-struct RemoteEntry: Decodable, Identifiable, Hashable, Sendable {
-    var id: String { path }
+struct RemoteEntry: Codable, Identifiable, Hashable, Sendable {
+    var id: Data { Data(path.utf8) }
     var path: String
     var type: String
     var size: Int64?
@@ -138,31 +77,57 @@ struct RemoteEntry: Decodable, Identifiable, Hashable, Sendable {
     var name: String { path.split(separator: "/").last.map(String.init) ?? path }
 }
 
-final class HubResponseCollector: @unchecked Sendable {
-    private let lock = NSLock()
-    private var response = HubResponseAccumulator()
-    private var failure: Error?
-    func append(_ line: String) -> Bool {
-        lock.lock(); defer { lock.unlock() }
-        guard failure == nil else { return false }
-        do { try response.append(line); return true }
-        catch { failure = error; return false }
-    }
-    func result(status: Int32) throws -> Data {
-        lock.lock(); defer { lock.unlock() }
-        if let failure { throw failure }
-        return try response.result(exitStatus: status)
-    }
-}
-
 enum HubService {
-    static func request<T: Decodable & Sendable>(_ args: [String], token: String?, process: CommandProcess? = nil) async throws -> T {
-        let collector = HubResponseCollector()
-        let command = process ?? CommandProcess()
-        let status = try await command.run(executable: AppPaths.python, arguments: [AppPaths.bridge] + args, token: token) { line in
-            if !collector.append(line) { command.stop() }
+    /// Adapter for the existing UI commands. All work now uses the native client.
+    static func request<T: Decodable & Sendable>(_ args: [String], token: String?, process: NativeOperation? = nil) async throws -> T {
+        let operation = process ?? NativeOperation()
+        return try await operation.run {
+            func value(_ flag: String, fallback: String = "") -> String {
+                guard let index = args.firstIndex(of: flag), args.indices.contains(index + 1) else { return fallback }
+                return args[index + 1]
+            }
+            func values(_ flag: String) -> [String] {
+                args.indices.compactMap { args[$0] == flag && args.indices.contains($0 + 1) ? args[$0 + 1] : nil }
+            }
+            func encoded<E: Encodable>(_ result: E) throws -> Data { try JSONEncoder().encode(result) }
+            func response(_ repo: HubRepo) -> RepoResponse { RepoResponse(id: repo.name, type: repo.kind.rawValue, private: repo.isPrivate) }
+            let hub = NativeHubClient(token: token)
+            let repo = HubRepo(name: value("--repo"), kind: RepoKind(rawValue: value("--type")) ?? .model)
+            let data: Data
+            switch args.first {
+            case "whoami":
+                let result = try await hub.whoami()
+                data = try encoded(HubIdentity(name: result.name, organizations: result.organizations))
+            case "repos": data = try encoded(try await hub.repos(owner: value("--owner")).map(response))
+            case "info": data = try encoded(response(try await hub.info(repo: repo)))
+            case "create":
+                let created = HubRepo(name: repo.name, kind: repo.kind, isPrivate: value("--private") == "true")
+                data = try encoded(response(try await hub.create(repo: created)))
+            case "tree":
+                let entries = try await hub.tree(repo: repo, path: value("--path"), allowMissingPath: args.contains("--allow-missing-path"))
+                data = try encoded(entries.map { RemoteEntry(path: $0.path, type: $0.isDirectory ? "directory" : "file", size: $0.size) })
+            case "delete":
+                _ = try await hub.deleteFile(repo: repo, path: value("--path"))
+                data = try encoded(["path": value("--path")])
+            case "scan":
+                data = try encoded(NativeScanner.scan(source: URL(fileURLWithPath: value("--source")), includes: values("--include"), excludes: values("--exclude")))
+            case "compare":
+                let manifest = URL(fileURLWithPath: value("--manifest"))
+                let handle = try FileHandle(forReadingFrom: manifest); defer { try? handle.close() }
+                let raw = try handle.read(upToCount: 16 * 1024 * 1024 + 1) ?? Data()
+                guard raw.count <= 16 * 1024 * 1024 else { throw NativeHubError.invalidInput("Comparison manifest is too large.") }
+                let paths = try JSONDecoder().decode([String].self, from: raw)
+                guard paths.count <= 2000 else { throw NativeHubError.invalidInput("Compare at most 2000 staged paths.") }
+                var comparison = NativePathComparison(paths: paths, destination: value("--destination"))
+                for entry in try await hub.tree(repo: repo, recursive: true) {
+                    try Task.checkCancellation()
+                    comparison.observe(path: entry.path, isDirectory: entry.isDirectory)
+                }
+                data = try encoded(comparison.result(complete: true))
+            default: throw NativeHubError.invalidInput("Unsupported repository operation.")
+            }
+            return try JSONDecoder().decode(T.self, from: data)
         }
-        return try JSONDecoder().decode(T.self, from: collector.result(status: status))
     }
 }
 

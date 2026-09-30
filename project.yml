@@ -15,20 +15,15 @@ targets:
     type: application
     platform: macOS
     sources:
-      - Sources/FaceHugger
-      - Sources/FaceHuggerCore
-      - path: Resources
-        buildPhase: resources
+      - path: Sources/FaceHugger
         excludes:
-          - '**/__pycache__/**'
-          - '**/*.pyc'
-          - '*.entitlements'
-          - Artwork
-          - ThirdParty
-      - path: Resources/ThirdParty
-        type: folder
+          - RuntimeBootstrap.swift
+      - path: Sources/FaceHuggerCore
+        excludes:
+          - RuntimePolicy.swift
+      - path: Resources/Assets.xcassets
         buildPhase: resources
-      - path: requirements.txt
+      - path: Resources/PythonFnmatchLicense.txt
         buildPhase: resources
     settings:
       base:

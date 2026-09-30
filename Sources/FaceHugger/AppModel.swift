@@ -28,25 +28,23 @@ final class AppModel {
     var comparisonError: String?
     var browseError: String?
     private var comparisonGeneration = UUID()
-    private var comparisonProcess: CommandProcess?
+    private var comparisonProcess: NativeOperation?
     var scanning = false
     var scanError: String?
     var pairings: [SavedPairing] = []
     var submitting = false
     private var scanGeneration = UUID()
-    private var scanProcess: CommandProcess?
+    private var scanProcess: NativeOperation?
     private let pairingArchive = PairingArchive(url: AppPaths.support.appendingPathComponent("pairings.json"))
     var selectedJobID: UUID?
     var sidebar = "uploads"
     var runtimeReady = AppPaths.runtimeReady
-    var installing = false
-    var setupLog = ""
     var logs: [UUID: String] = [:]
     var progress: [UUID: UploadProgress] = [:]
     var keepAwake = true
     private var queueControl = UploadQueueControl()
     private var token: String?
-    private var runner: CommandProcess?
+    private var runner: NativeOperation?
     private var activity: NSObjectProtocol?
     private var browseGeneration = UUID()
     private var selectionGeneration = UUID()
@@ -55,12 +53,7 @@ final class AppModel {
     private let archive = QueueArchive(url: AppPaths.support.appendingPathComponent("queue.json"))
     var activeJob: UploadJob? { jobs.first { $0.state == .running } }
     var selectedJob: UploadJob? { jobs.first { $0.id == selectedJobID } }
-    var hasExistingCredentials: Bool {
-        if AppPaths.isStoreEdition { return token != nil }
-        let env = ProcessInfo.processInfo.environment
-        let tokenFile = env["HF_TOKEN_PATH"] ?? (env["HF_HOME"] ?? NSHomeDirectory() + "/.cache/huggingface") + "/token"
-        return token != nil || env["HF_TOKEN"] != nil || FileManager.default.fileExists(atPath: tokenFile)
-    }
+    var hasExistingCredentials: Bool { token != nil }
 
     init() {
         token = CredentialStore.read()
@@ -162,7 +155,7 @@ final class AppModel {
             draftSource = sourceAccess.url.path; draftSourceBookmark = sourceAccess.bookmark
         } catch { scanError = error.localizedDescription; return }
         let generation = scanGeneration
-        let process = CommandProcess(maxLineBytes: 16_000_000); scanProcess = process; scanning = true
+        let process = NativeOperation(); scanProcess = process; scanning = true
         var args = ["scan", "--source", draftSource]
         for pattern in draftIncludes { args += ["--include", pattern] }
         for pattern in draftExcludes { args += ["--exclude", pattern] }
@@ -190,7 +183,7 @@ final class AppModel {
         invalidateComparison()
         guard let staging, let repo = currentRepo else { return }
         let generation = comparisonGeneration, destination = remotePath
-        let process = CommandProcess(maxLineBytes: 16_000_000)
+        let process = NativeOperation()
         comparisonProcess = process; comparing = true
         Task {
             let manifest = FileManager.default.temporaryDirectory.appendingPathComponent("face-hugger-compare-\(UUID().uuidString).json")
@@ -210,9 +203,9 @@ final class AppModel {
     func fileStatus(_ file: StagedFile) -> String {
         if !file.included { return "Excluded" }
         if comparing { return "Checking…" }
-        if comparison?.conflicts.contains(where: { $0.path == file.path }) == true { return "Path conflict" }
+        if comparison?.conflicts.contains(where: { Data($0.path.utf8) == Data(file.path.utf8) }) == true { return "Path conflict" }
         guard let comparison else { return "Not checked" }
-        if comparison.paths.contains(file.path) { return "Remote path exists" }
+        if comparison.paths.contains(where: { Data($0.utf8) == Data(file.path.utf8) }) { return "Remote path exists" }
         return comparison.complete ? "New path" : "Not checked"
     }
     func locateSource(for id: UUID) {
@@ -308,7 +301,18 @@ final class AppModel {
     }
     func startQueue() { queueControl.start(); runNext() }
     func stop() { queueControl.stop(); runner?.stop() }
-    func remove(_ id: UUID) { guard jobs.first(where: { $0.id == id })?.state != .running else { return }; jobs.removeAll { $0.id == id }; logs.removeValue(forKey: id); progress.removeValue(forKey: id); persist() }
+    func remove(_ id: UUID) {
+        guard jobs.first(where: { $0.id == id })?.state != .running else { return }
+        do {
+            if FileManager.default.fileExists(atPath: AppPaths.checkpoints.path) {
+                for folder in try FileManager.default.contentsOfDirectory(at: AppPaths.checkpoints, includingPropertiesForKeys: nil)
+                    where folder.lastPathComponent.hasPrefix(id.uuidString + "-") {
+                    try FileManager.default.removeItem(at: folder)
+                }
+            }
+        } catch { self.error = "Could not remove this upload’s local checkpoints: \(error.localizedDescription)"; return }
+        jobs.removeAll { $0.id == id }; logs.removeValue(forKey: id); progress.removeValue(forKey: id); persist()
+    }
     func move(from: IndexSet, to: Int) { jobs.move(fromOffsets: from, toOffset: to); persist() }
     func runNext() {
         guard runner == nil else { return }
@@ -331,21 +335,24 @@ final class AppModel {
         jobs[index].state = .running; jobs[index].message = "Starting upload…"; persist()
         progress.removeValue(forKey: job.id)
         if keepAwake { activity = ProcessInfo.processInfo.beginActivity(options: [.idleSystemSleepDisabled, .userInitiated], reason: "Uploading files to Hugging Face") }
-        let command = CommandProcess(); runner = command
+        let command = NativeOperation(); runner = command
         let collector = LineCollector(limit: 600)
-        var args = [AppPaths.bridge, "upload", "--repo", job.repo.name, "--type", job.repo.kind.rawValue, "--source", job.source, "--destination", job.destination]
-        for pattern in job.includes { args += ["--include", pattern] }
-        for pattern in job.excludes { args += ["--exclude", pattern] }
         Task { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) }
         Task {
             defer { sourceAccess.close() }
             var status: Int32 = -1
             do {
-                status = try await command.run(executable: AppPaths.python, arguments: args, token: token) { line in
-                    collector.append(line)
-                    Task { @MainActor in self.receive(line, jobID: job.id) }
+                let credential = token
+                try await command.run {
+                    try await NativeUploader.upload(job: job, token: credential, checkpointDirectory: AppPaths.checkpoints) { event in
+                        let line = Self.eventLine(event)
+                        collector.append(line)
+                        Task { @MainActor in self.receive(line, jobID: job.id) }
+                    }
                 }
-            } catch { receiveError(error.localizedDescription, jobID: job.id) }
+                status = 0
+            } catch is CancellationError { status = 143 }
+            catch { collector.append(Self.errorLine(error.localizedDescription)) }
             // Replay the bounded output in order before finalization. Queued UI callbacks
             // cannot otherwise be assumed to arrive before process termination.
             logs[job.id] = ""
@@ -353,8 +360,22 @@ final class AppModel {
             finish(job.id, status: status)
         }
     }
-    private func receiveError(_ message: String, jobID: UUID) {
-        if let index = jobs.firstIndex(where: { $0.id == jobID }) { jobs[index].message = message }
+    nonisolated private static func eventLine(_ event: NativeUploadEvent) -> String {
+        let object: [String: Any]
+        switch event {
+        case .status(let message): object = ["event": "status", "message": message]
+        case .completed: object = ["event": "status", "message": "Upload complete"]
+        case .progress(let progress):
+            object = ["event": "progress", "checked": progress.checked, "total": progress.total,
+                      "uploaded": progress.uploaded, "upload_total": progress.uploadTotal,
+                      "transferred": ByteCountFormatter.string(fromByteCount: progress.transferredBytes, countStyle: .file),
+                      "committed": progress.committed, "commits": progress.commits]
+        }
+        return String(decoding: (try? JSONSerialization.data(withJSONObject: object)) ?? Data(), as: UTF8.self)
+    }
+    nonisolated private static func errorLine(_ message: String) -> String {
+        let safe = message.replacingOccurrences(of: "hf_[A-Za-z0-9]+", with: "[redacted]", options: .regularExpression)
+        return String(decoding: (try? JSONSerialization.data(withJSONObject: ["event": "error", "message": safe])) ?? Data(), as: UTF8.self)
     }
     private func receive(_ line: String, jobID: UUID) {
         guard let index = jobs.firstIndex(where: { $0.id == jobID }), jobs[index].state == .running else { return }
@@ -392,29 +413,5 @@ final class AppModel {
         let content = UNMutableNotificationContent(); content.title = state == .completed ? "Upload complete" : state == .failed ? "Upload needs attention" : "Upload stopped"; content.body = jobs[index].title
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id.uuidString, content: content, trigger: nil))
         runNext()
-    }
-    func installRuntime() async {
-        #if STORE_BUILD
-        error = "Upload tools are included with Face Hugger. If they are missing, reinstall the app from the App Store."
-        #else
-        guard !installing, activeJob == nil else { return }
-        guard let requirements = Bundle.main.url(forResource: "runtime-requirements", withExtension: "txt") else { error = "The app is missing its upload tool requirements."; return }
-        installing = true; setupLog = "Setting up upload tools…"; defer { installing = false }
-        do {
-            setupLog += "\nPreparing setup tools; downloading from Astral if needed…"
-            let uv = try await RuntimeBootstrap.prepare(in: AppPaths.support)
-            runtimeReady = false
-            if FileManager.default.fileExists(atPath: AppPaths.runtimeMarker.path) { try FileManager.default.removeItem(at: AppPaths.runtimeMarker) }
-            try FileManager.default.createDirectory(at: AppPaths.support, withIntermediateDirectories: true)
-            for args in RuntimePolicy.setupCommands(support: AppPaths.support, requirements: requirements) {
-                let result = try await CommandProcess().run(executable: uv, arguments: args, token: nil, environmentOverrides: RuntimePolicy.setupEnvironment(support: AppPaths.support)) { [weak self] line in
-                    Task { @MainActor in self?.setupLog = String(((self?.setupLog ?? "") + "\n" + line).suffix(12_000)) }
-                }
-                guard result == 0 else { throw NSError(domain: "Setup", code: Int(result), userInfo: [NSLocalizedDescriptionKey: "Upload tool setup failed. See the setup log."]) }
-            }
-            try Data("python=\(RuntimePolicy.pythonVersion);locked-runtime-v3".utf8).write(to: AppPaths.runtimeMarker, options: .atomic)
-            runtimeReady = true; setupLog += "\nUpload tools are ready."
-        } catch { self.error = error.localizedDescription }
-        #endif
     }
 }

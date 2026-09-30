@@ -6,7 +6,7 @@ struct RepoBrowser: View {
     @Bindable var model: AppModel
     let repo: HubRepo
     var chooseRepository: (() -> Void)? = nil
-    @State private var selection: String?
+    @State private var selection: Data?
     @State private var search = ""
     @State private var pendingDelete: RemoteEntry?
 
@@ -130,7 +130,7 @@ struct RepoBrowser: View {
             }
             .tableStyle(.inset(alternatesRowBackgrounds: false))
             .scrollContentBackground(.hidden)
-            .contextMenu(forSelectionType: String.self) { ids in
+            .contextMenu(forSelectionType: Data.self) { ids in
                 if let id = ids.first, let entry = model.entries.first(where: { $0.id == id }) {
                     if entry.isDirectory { Button("Open folder") { activate(entry) } }
                     Button("Open on Hugging Face") { open(entry) }

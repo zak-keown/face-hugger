@@ -68,9 +68,10 @@ trap 'exit 143' TERM
 
 # Generate a separate project so a parallel Debug build's project is untouched.
 xcodegen generate --spec "$repo_root/project.yml" --project-root "$repo_root" --project "$beta_work/project" --quiet
-# XcodeGen roots top-level file references at the generated project directory;
-# directory groups are relocated correctly, but this single resource is not.
-cp "$repo_root/requirements.txt" "$beta_work/project/requirements.txt"
+# XcodeGen resolves this top-level file resource beside the generated project.
+# Only the narrow native matcher notice is copied; no legacy runtime resources.
+mkdir -p "$beta_work/project/Resources"
+cp "$repo_root/Resources/PythonFnmatchLicense.txt" "$beta_work/project/Resources/PythonFnmatchLicense.txt"
 build_args=(
   -project "$beta_work/project/FaceHugger.xcodeproj"
   -scheme FaceHugger -configuration Release
@@ -82,7 +83,7 @@ build_args=(
 )
 if [[ -n "${FACEHUGGER_TEAM_ID:-}" ]]; then build_args+=("DEVELOPMENT_TEAM=$FACEHUGGER_TEAM_ID"); fi
 printf 'Building Release (%s)…\n' "$architectures"
-if ! xcodebuild "${build_args[@]}" build > "$beta_work/build.log" 2>&1; then
+if ! xcodebuild "${build_args[@]}" clean build > "$beta_work/build.log" 2>&1; then
   echo "Build failed. Inspect $beta_work/build.log" >&2
   tail -n 35 "$beta_work/build.log" >&2
   exit 1

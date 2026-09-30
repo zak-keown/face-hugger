@@ -1,6 +1,6 @@
 import Foundation
 
-/// Suggested next steps, not definitive diagnoses of arbitrary CLI error text.
+/// Suggested next steps, not definitive diagnoses of arbitrary error text.
 public enum UploadRecoveryHint: Equatable, Sendable {
     case authentication, network, missingSource, other
 
@@ -11,7 +11,7 @@ public enum UploadRecoveryHint: Equatable, Sendable {
         if accountPhrases.contains(where: text.contains) || text.range(of: #"\b(401|403)\s+(client error|unauthorized|forbidden)\b|\b(http|status(?: code)?)\s*[:=]?\s*(401|403)\b"#, options: .regularExpression) != nil {
             return .authentication
         }
-        let networkPhrases = ["connectionerror", "connecterror", "connecttimeout", "readtimeout", "connection refused", "connection reset", "connection aborted", "connection timed out", "read timed out", "temporary failure in name resolution", "name or service not known", "network is unreachable", "network is down", "nodename nor servname provided"]
+        let networkPhrases = ["network request failed", "connectionerror", "connecterror", "connecttimeout", "readtimeout", "connection refused", "connection reset", "connection aborted", "connection timed out", "read timed out", "temporary failure in name resolution", "name or service not known", "network is unreachable", "network is down", "nodename nor servname provided"]
         if networkPhrases.contains(where: text.contains) { return .network }
         return .other
     }

@@ -6,12 +6,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var model: AppModel?
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if model?.installing == true {
-            let alert = NSAlert(); alert.messageText = "Upload tools are still being installed"
-            alert.informativeText = "Please let setup finish before quitting Face Hugger."
-            alert.addButton(withTitle: "Continue setup"); alert.runModal()
-            return .terminateCancel
-        }
         guard let model, model.activeJob != nil else { return .terminateNow }
         let alert = NSAlert(); alert.messageText = "Stop uploading and quit?"
         alert.informativeText = "You can resume this upload next time you open Face Hugger. Files already committed will remain on Hugging Face. Closing the window instead keeps your upload running."

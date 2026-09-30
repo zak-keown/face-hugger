@@ -1,6 +1,12 @@
 # Face Hugger handoff — September 30, 2026
 
-## Current outcome
+## Current outcome — native build 4
+
+The native replacement is implemented, signed, and audited. Networking uses URLSession, hashing uses CryptoKit, and the package contains no Python/OpenSSL/Xet runtime. 66 Swift tests and the live 16 MiB cancellation/fresh-process-resume/download-verification flow passed, with disposable test repositories cleaned. The signed sandboxed UI also restored its saved bookmark and uploaded the approved four-file fixture. See [native backend evidence](native-backend-release.md) and [current App Store state](../AppStore/README.md). Build 4 (`f701748b-9e6a-45e1-a4cf-771e656f7dad`) is processed VALID and attached to the existing draft. Apple reports `usesNonExemptEncryption=false`; latest ASC validation has 0 errors/warnings/blockers. It contains the approved icon. No App Review submission or public release.
+
+The sections below record the historical build-3 implementation; they do not describe the current native package.
+
+## Historical build 3 outcome
 
 Native macOS Transfer Bench design is preserved. The owner requested a more cartoon-like creature and nonwhite icon background; the revised smooth emoji artwork is in Resources/Artwork/face-hugger-icon-v2.png, with mechanical icon-size packaging in Scripts/Art/build_assets.swift. Build 3 packages this icon and the supplemental LibYAML notice and is attached to the draft. Store variant **1.0 (3)** now has a self-contained universal upload runtime, App Sandbox, persistent folder bookmarks, nested signatures, and a signed installer. Package `dist/store/FaceHugger-1.0-3.pkg` uploaded and attached to the ASC draft. Nothing submitted for App Review or released; release remains manual.
 
@@ -30,7 +36,7 @@ Team `3FMAPDQDGP`. Store application certificate `J96CN8H3CC`, identity `D9C38F0
 
 The original Developer ID-notarized direct beta `dist/beta/FaceHugger-0.1.0-beta.1-universal-notarized.dmg` predates these fixes. Rebuild/notarize a new artifact before distributing current direct-build code. Do not describe the old DMG as containing this work.
 
-## Resume
+## Historical build-3 resume checklist
 
 1. Inspect Git and latest ASC validation; preserve unrelated changes.
 2. Screenshots are complete: four 2560 × 1600 assets uploaded and processed COMPLETE. The capture record is in AppStore/screenshots/README.md. Preserve untouched originals and checksums.

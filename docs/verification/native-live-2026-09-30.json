@@ -1,0 +1,19 @@
+{
+  "cancelledDuringTransferAtBytes" : 2097152,
+  "downloadHashes" : {
+    "notes.txt" : "de56ae0a4a3a48db7f3e0fddf89b7b5ef6b3af5d7e6875376d36b686761f0f57",
+    "payload.bin" : "5a66dcbfb19d10f21ad3c73a7c7443b5b41bfef149cf443517154b10b33f23f6"
+  },
+  "firstCommitted" : 2,
+  "fixtureRemoved" : true,
+  "hashing" : "CryptoKit",
+  "newRepositoryListedImmediately" : true,
+  "passed" : true,
+  "remoteChangeInvalidatedReceipts" : true,
+  "repo" : "zakkeown\/face-hugger-native-app-f76971d7-820",
+  "repoDeleted" : true,
+  "repositoryListingSucceeded" : true,
+  "resumedInFreshProcess" : true,
+  "resumeReusedConfirmedCommits" : true,
+  "transport" : "URLSession"
+}

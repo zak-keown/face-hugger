@@ -1,7 +1,7 @@
 import Foundation
 
 struct StagedFile: Decodable, Identifiable, Sendable {
-    var id: String { path }
+    var id: Data { Data(path.utf8) }
     let path: String
     let size: Int64
     let included: Bool

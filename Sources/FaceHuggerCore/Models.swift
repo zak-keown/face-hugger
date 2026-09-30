@@ -21,7 +21,7 @@ public enum JobState: String, Codable, Sendable {
     public var label: String { rawValue.capitalized }
 }
 
-/// Counts reported by the pinned HF CLI; stages overlap and are not an overall percentage.
+/// Native transfer stage counts; these are not an overall completion percentage.
 public struct UploadProgress: Decodable, Sendable {
     public var checked: Int
     public var total: Int

@@ -14,7 +14,7 @@ struct MainView: View {
     @State private var pendingPairing: SavedPairing?
     @State private var pendingSource: URL?
     @State private var localSearch = ""
-    @State private var sourceSelection: String?
+    @State private var sourceSelection: Data?
 
     var body: some View {
         VStack(spacing: 0) {

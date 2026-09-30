@@ -1,0 +1,14 @@
+{
+  "buildId": "f701748b-9e6a-45e1-a4cf-771e656f7dad",
+  "version": "1.0",
+  "build": "4",
+  "usesNonExemptEncryption": false,
+  "processingState": "VALID",
+  "readbackVerified": true,
+  "networking": "Apple URLSession",
+  "hashing": "Apple CryptoKit SHA-256",
+  "credentials": "Apple Security Keychain",
+  "thirdPartyTLSBundled": false,
+  "documentationBasis": "https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption",
+  "bundleAudit": "docs/verification/native-bundle-build4.json"
+}

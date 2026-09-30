@@ -14,8 +14,10 @@
   "documentUploaded": false,
   "assignmentCommandSucceeded": true,
   "assignmentReadbackVerified": false,
-  "nextStep": "Required documentation and Apple encryption review; CREATED is not approval.",
+  "nextStep": "Historical build 3 record. Build 4 replaces it in the draft with verified OS-only encryption; no filing is being pursued for build 3.",
   "browserRequiredDocument": "French encryption declaration approval form",
   "browserDisplayStatus": "Upload Failed (no document attached)",
-  "filingMaterialsPrepared": true
+  "filingMaterialsPrepared": true,
+  "historicalOnly": true,
+  "supersededByNativeBuild": "f701748b-9e6a-45e1-a4cf-771e656f7dad"
 }

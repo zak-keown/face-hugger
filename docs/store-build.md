@@ -1,33 +1,31 @@
 # Mac App Store build
 
-`project-store.yml` overlays the direct app's project with a separate Store configuration: sandbox entitlements, the `STORE_BUILD` compilation condition, version 1.0/build 3, and a build phase that embeds a self-contained upload runtime. Generate it with `xcodegen generate --spec project-store.yml`; the generated `FaceHuggerStore.xcodeproj` is ignored by Git. The direct project and its downloadable runtime remain available.
+`project-store.yml` overlays the base project with sandbox entitlements, the `STORE_BUILD` compilation condition, and **version 1.0/build 4**. Build 4 is the signed and audited native-backend replacement. The uploaded build 3 remains a separate Python-runtime artifact with its existing non-exempt encryption facts.
 
-## Runtime and permissions
+Generate with `xcodegen generate --spec project-store.yml`. The generated `FaceHuggerStore.xcodeproj` is ignored by Git. The resource allowlist includes the asset catalog and the native wildcard matcher’s PSF license notice; Python bridge/runtime/requirements and historical third-party notices are not packaged. Legacy runtime bootstrap/policy source files are excluded from both app targets. There is no runtime embed phase or setup download in the intended native app.
 
-Stage the pinned runtime with `python3 Scripts/stage-store-runtime.py`. See [store-runtime.md](store-runtime.md). The embed phase verifies its seal and matches the recorded dependency hash/Python/uv versions against the build inputs, then signs each native component and seals the runtime bundle before Xcode signs the app. Missing architecture payloads fail the build.
+## Permissions
 
-The app entitlements allow outbound networking and read/write access to user-selected folders. Python executables inherit the parent's sandbox; no library-validation exception is used. Source folder bookmarks are stored with queue items and pairings. Scans and uploads retain independent access until their subprocesses exit. Old path-only records can require selecting the folder again in a sandbox.
-
-Store workers use the architecture-specific bundled Python, an app-container HF cache, a minimal environment, and Keychain credentials entered into the app. They do not import the separate shell CLI login. Python user-site packages, bytecode writes, optional HF telemetry, and HF CLI update checks are disabled. The runtime download/install flow is compiled out of the Store variant. Settings indicates tools are included and updated with the app.
+The app retains outbound network and user-selected-folder read/write entitlements, with app-scoped bookmarks. The native implementation must retain selected-folder access through scanning and transfer lifetimes and restore bookmarks after relaunch. An old path-only queue item may require selecting its folder again. Credentials are entered in the app and stored in Keychain; a separate shell CLI login is not imported.
 
 ## Signing and packaging
 
-Install a Mac App Store application certificate/private key, a Mac Installer Distribution certificate/private key, and a matching Mac App Store provisioning profile. These are different from Developer ID notarization credentials. Keep private keys in Keychain, never in Git.
+Install Mac App Store application and installer signing identities/private keys and a matching provisioning profile in Keychain. These differ from Developer ID notarization credentials. Never store private keys in Git.
 
 ```sh
 FACEHUGGER_STORE_APP_IDENTITY='3rd Party Mac Developer Application: Your Name (TEAMID)' \
 FACEHUGGER_STORE_INSTALLER_IDENTITY='3rd Party Mac Developer Installer: Your Name (TEAMID)' \
 FACEHUGGER_STORE_PROFILE='Your installed profile name' \
 FACEHUGGER_TEAM_ID='TEAMID' \
-bash Scripts/package-store.sh
+Scripts/package-store.sh
 ```
 
-The script builds both architectures, verifies the app signature and embedded profile, signs a flat installer package, and writes its checksum in `dist/store/`. It never uploads, submits, or publishes. `Resources/ThirdParty` is preserved as a folder resource; the Settings notices link exposes the corresponding public repository files. See [third-party-notices.md](third-party-notices.md) for audit scope and remaining gaps.
+The script performs a clean universal Release build, then audits the exact bundle for forbidden legacy runtime resources, unexpected native executables, non-system dynamic dependencies, and selected Python/third-party crypto references. It verifies signature, sandbox/network entitlements, both architecture slices, and the embedded provisioning profile. Only a passing bundle is packaged and checksummed in `dist/store/`. Reports are in `.build/store-package/native-audit/`. There is no automatic upload, submission, or publication.
 
-The local team now has application certificate `J96CN8H3CC`, installer certificate `7HQ7WWX8TW`, and profile `6TA8PNK7KK` (name **Face Hugger Mac App Store**, UUID `a7216289-cdf0-41be-97ca-718aa5e31617`). Private keys were imported to login Keychain and temporary raw-key/CSR files removed. Public certificate/profile material is ignored under `.build/store-signing`.
+The audit is deliberately strict: even Xcode's Debug companion dylib fails it. Use a Release build. Dynamic dependency inspection cannot rule out statically embedded code by itself; source/link-input review remains necessary. See [native-backend-release.md](native-backend-release.md) for the complete gate.
 
-## Validation scope
+## Evidence and remaining work
 
-The Apple Development-signed sandbox probe proved selected-folder access, restoration after relaunch, and bundled Python/HF read/write with a negative pre-restoration access check. The actual Store prototype scanned the harmless fixture and showed bundled-tools Settings. See [sandbox-verification.md](sandbox-verification.md). Both direct and universal Store development builds compiled. The locked runtime ran all 56 Python tests and the core suite ran 32 Swift tests.
+Prior sandbox probes, Python/HF test suites, completed upload screenshots, and build-3 live round trips are historical evidence for the prior engine. They are not proof of native build-4 behavior. Native live authentication/upload/browse/delete, multipart, cancellation and fresh-process resume, sandboxed selected-folder access and a four-file UI upload, and an audit of the expanded signed installer have passed. Clean-machine installation remains to be verified. Intel runtime execution is separate from having a valid x86_64 slice.
 
-Intel execution is untested on this Apple Silicon Mac without Rosetta. A successful local package is not a processed App Store build or App Review acceptance. Final screenshots must come from the intended release build. Review access, owner-confirmed content rights, and App Privacy publication are complete. Export compliance, screenshots, account-level territory requirements, and final dependency-obligation review remain separate gates. The real sandboxed upload round trip also passed; its disposable repository was cleaned.
+Build 3's uploaded screenshots and published privacy label remain in App Store Connect. Build 4 has passed the native package audit and declares only OS-provided encryption; the old French-filing work remains historical unless the owner proceeds with that build. No legal exemption is asserted merely because the architecture is intended to use Apple system APIs.

@@ -14,9 +14,9 @@
   "versionId": "6302c414-5900-40dd-bb0d-2b886d65496b",
   "notSubmitted": true,
   "unresolved": [
-    "Encryption/export-compliance determination",
-    "Final native dependency license-obligation review",
-    "Intel runtime verification"
+    "Clean-machine installation and longer real-network interruption validation",
+    "Intel runtime execution",
+    "Final release-owner submission approval"
   ],
   "validationReport": "AppStore/validation.json",
   "price": "Free",
@@ -26,16 +26,17 @@
   "contentRights": "USES_THIRD_PARTY_CONTENT",
   "privacyPublished": true,
   "reviewAccessConfigured": true,
-  "storePackage": "dist/store/FaceHugger-1.0-3.pkg",
-  "buildId": "d2ccd249-8a5f-4e4b-a36d-c0386cdc296b",
-  "encryptionDeclarationId": "deb48a27-898e-44dc-8da5-77c2cf681899",
-  "encryptionStatus": "Non-exempt flag saved; declaration CREATED, documentation pending; association not verified",
-  "encryptionFilingMaterials": "output/pdf/README.md",
+  "storePackage": "dist/store/FaceHugger-1.0-4.pkg",
+  "buildId": "f701748b-9e6a-45e1-a4cf-771e656f7dad",
+  "encryptionStatus": "Build 4 OS-only encryption: usesNonExemptEncryption=false verified from processed Apple build",
   "screenshots": {
     "count": 4,
     "locale": "en-US",
     "displayType": "APP_DESKTOP",
     "state": "COMPLETE",
     "path": "AppStore/screenshots/1.0-build3"
-  }
+  },
+  "historicalBuild3EncryptionDeclarationId": "deb48a27-898e-44dc-8da5-77c2cf681899",
+  "historicalBuild3EncryptionFilingMaterials": "output/pdf/README.md",
+  "nativeEvidence": "docs/native-backend-release.md"
 }
