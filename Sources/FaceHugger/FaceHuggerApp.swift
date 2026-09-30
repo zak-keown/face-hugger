@@ -39,6 +39,7 @@ struct FaceHuggerApp: App {
                 .onAppear { delegate.model = model }
         }
         .defaultSize(width: 1240, height: 820)
+        .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .newItem) {

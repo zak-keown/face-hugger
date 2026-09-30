@@ -41,10 +41,11 @@ struct MainView: View {
                     Text("Face Hugger").font(.system(size: 14, weight: .semibold))
                 }
             }
+            .benchTitleBackground()
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Pairings", systemImage: "link") { showPairings.toggle() }
+                Button { showPairings.toggle() } label: { Label("Pairings", systemImage: "link").labelStyle(.titleAndIcon) }
                     .popover(isPresented: $showPairings, arrowEdge: .bottom) { pairingPicker }
-                Button(model.identity?.name ?? "Connect", systemImage: "person.crop.circle") { model.showSettings = true }
+                Button { model.showSettings = true } label: { Label(model.identity?.name ?? "Connect", systemImage: "person.crop.circle").labelStyle(.titleAndIcon) }
                     .help("Account and settings")
             }
         }
@@ -286,5 +287,16 @@ struct BenchUploadButton: ButtonStyle {
         configuration.label.font(.system(size: 13, weight: .semibold)).padding(.horizontal, 20).padding(.vertical, 10)
             .foregroundStyle(enabled ? Color(red: 0.15, green: 0.2, blue: 0.26) : BenchTheme.secondary)
             .background(enabled ? BenchTheme.gold.opacity(configuration.isPressed ? 0.75 : 1) : BenchTheme.divider.opacity(0.4), in: RoundedRectangle(cornerRadius: 7))
+    }
+}
+
+private extension ToolbarContent {
+    @ToolbarContentBuilder
+    func benchTitleBackground() -> some ToolbarContent {
+        if #available(macOS 26.0, *) {
+            self.sharedBackgroundVisibility(.hidden)
+        } else {
+            self
+        }
     }
 }
