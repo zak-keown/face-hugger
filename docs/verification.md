@@ -59,3 +59,7 @@ Native read-only inspection verified both conflict directions: local file versus
 First-run setup was exercised in an isolated temporary support directory with system uv lookup disabled: official archive download, checksum verification, extraction, cached reuse, Python 3.12 environment creation, and pinned HF import all passed; temporary setup files were removed. The existing user runtime was preserved.
 
 The suite now includes 19 Swift tests and 49 Python tests. All Python tests pass in the managed runtime; system Python skips three SDK-dependent checks. Universal Release packaging verifies arm64/x86_64 slices, code signatures, disk-image integrity, mounted contents, and the Applications link.
+
+## Notarized beta result
+
+`FaceHugger-0.1.0-beta.1-universal-notarized.dmg` contains the universal arm64/x86_64 Release app signed with Developer ID Application. Apple accepted both app and DMG submissions through the configured ASC profile. Both tickets were stapled and validated; Gatekeeper accepted the app and disk image as Notarized Developer ID. The package script verified mounted contents, app signature, architectures, image integrity, and the Applications link. An adjacent SHA-256 file identifies the final DMG. Live test payloads were removed, retaining the repository-cleanup ledger.

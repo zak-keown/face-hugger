@@ -6,7 +6,7 @@
 
 A native Mac upload manager for Hugging Face. Give your big folders a home.
 
-Face Hugger wraps the official `hf upload` CLI in a SwiftUI app with a persistent queue, readable logs, a menu bar companion, and a small repository browser. This is an early **0.1 developer build**, targeting macOS 15 and later.
+Face Hugger wraps the official `hf upload` CLI in a SwiftUI app with a persistent queue, readable logs, a menu bar companion, and a small repository browser. This is an early **0.1 beta**, targeting macOS 15 and later.
 
 ## What works
 
