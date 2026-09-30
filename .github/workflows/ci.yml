@@ -19,7 +19,8 @@ jobs:
         run: |
           brew install xcodegen uv
           uv python install 3.12.14
-          dirname "$(uv python find 3.12.14)" >> "$GITHUB_PATH"
+          uv venv --python 3.12.14 .venv
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
       - name: Toolchain
         run: |
           xcodebuild -version
@@ -27,6 +28,6 @@ jobs:
           python3 --version
       - name: Install locked upload dependencies
         run: |
-          uv pip install --python "$(uv python find 3.12.14)" --system --require-hashes --only-binary=:all: -r Resources/runtime-requirements.txt
+          uv pip sync --python .venv/bin/python --require-hashes --only-binary=:all: -r Resources/runtime-requirements.txt
       - name: Test and build
         run: Scripts/check.sh --build
