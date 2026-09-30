@@ -26,6 +26,7 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Install locked upload dependencies
-        run: python3 -m pip install --require-hashes --only-binary=:all: -r Resources/runtime-requirements.txt
+        run: |
+          python3 -m pip install --require-hashes --only-binary=:all: -r Resources/runtime-requirements.txt
       - name: Test and build
         run: Scripts/check.sh --build

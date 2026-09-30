@@ -10,7 +10,7 @@
 - Owner-confirmed third-party content rights saved.
 - Owner-approved App Privacy published: User ID and Other User Content, linked to user for App Functionality, no tracking.
 - Private App Review contact, scoped token, and working-access instructions saved. Keep the dedicated review repository/token until review completes; see [review-access.json](review-access.json). Credentials and private phone are not in Git.
-- Universal, sandboxed Store package **1.0 (2)** built, signed, uploaded, and attached to the draft. Build ID `308a707f-72a8-4801-9dcc-7cb5b3c530fd`.
+- Universal, sandboxed Store package **1.0 (3)** built, signed, uploaded, and attached to the draft. Build ID `d2ccd249-8a5f-4e4b-a36d-c0386cdc296b`.
 
 ## Remaining release work
 

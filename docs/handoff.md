@@ -2,9 +2,9 @@
 
 ## Current outcome
 
-Native macOS Transfer Bench design is preserved. The owner requested a more cartoon-like creature and nonwhite icon background; the revised smooth emoji artwork is in Resources/Artwork/face-hugger-icon-v2.png, with mechanical icon-size packaging in Scripts/Art/build_assets.swift. Build 3 packages this icon and the supplemental LibYAML notice; build 2 remains attached until replacement upload completes. Store variant **1.0 (2)** now has a self-contained universal upload runtime, App Sandbox, persistent folder bookmarks, nested signatures, and a signed installer. Package `dist/store/FaceHugger-1.0-2.pkg` uploaded and attached to the ASC draft. Nothing submitted for App Review or released; release remains manual.
+Native macOS Transfer Bench design is preserved. The owner requested a more cartoon-like creature and nonwhite icon background; the revised smooth emoji artwork is in Resources/Artwork/face-hugger-icon-v2.png, with mechanical icon-size packaging in Scripts/Art/build_assets.swift. Build 3 packages this icon and the supplemental LibYAML notice and is attached to the draft. Store variant **1.0 (3)** now has a self-contained universal upload runtime, App Sandbox, persistent folder bookmarks, nested signatures, and a signed installer. Package `dist/store/FaceHugger-1.0-3.pkg` uploaded and attached to the ASC draft. Nothing submitted for App Review or released; release remains manual.
 
-App `6817866865`; bundle `dev.zakkeown.FaceHugger`; version `6302c414-5900-40dd-bb0d-2b886d65496b`; build `308a707f-72a8-4801-9dcc-7cb5b3c530fd`; SKU `FACEHUGGER`. Full listing state and remaining gates: [AppStore/README.md](../AppStore/README.md).
+App `6817866865`; bundle `dev.zakkeown.FaceHugger`; version `6302c414-5900-40dd-bb0d-2b886d65496b`; build `d2ccd249-8a5f-4e4b-a36d-c0386cdc296b`; SKU `FACEHUGGER`. Full listing state and remaining gates: [AppStore/README.md](../AppStore/README.md).
 
 ## Implemented and verified
 
