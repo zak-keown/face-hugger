@@ -17,7 +17,7 @@ struct MainView: View {
                     else if let repo = model.currentRepo { RepoBrowser(model: model, repo: repo) }
                     else { ContentUnavailableView("Choose a repository", systemImage: "folder", description: Text("Your model and dataset repositories appear in the sidebar.")) }
                 }.frame(minWidth: 390, maxWidth: .infinity, maxHeight: .infinity)
-                if (model.sidebar == "uploads" || model.sidebar == "history"), let job = model.selectedJob {
+                if let job = selectedVisibleJob {
                     JobInspector(model: model, job: job).frame(minWidth: 265, idealWidth: 300, maxWidth: 360)
                 }
             }
@@ -97,6 +97,10 @@ struct MainView: View {
         }
     }
     private var visibleJobs: [UploadJob] { model.jobs.filter { model.sidebar == "history" ? $0.state == .completed : $0.state != .completed } }
+    private var selectedVisibleJob: UploadJob? {
+        guard model.sidebar == "uploads" || model.sidebar == "history" else { return nil }
+        return visibleJobs.first { $0.id == model.selectedJobID }
+    }
     private var queue: some View {
         VStack(spacing: 0) {
             if visibleJobs.isEmpty {
@@ -178,11 +182,22 @@ struct JobInspector: View {
                 detail("To", job.repo.name + "/" + job.destination)
                 detail("Repository", "\(job.repo.kind.rawValue.capitalized) · \(job.repo.isPrivate ? "Private" : "Visibility set on Hugging Face")")
                 detail("Added", job.createdAt.formatted(date: .abbreviated, time: .shortened))
+                if let finished = job.finishedAt { detail("Completed", finished.formatted(date: .abbreviated, time: .shortened)) }
                 if !job.includes.isEmpty { detail("Include", job.includes.joined(separator: "\n")) }
                 if !job.excludes.isEmpty { detail("Exclude", job.excludes.joined(separator: "\n")) }
                 Divider()
+                if job.state != .completed, let progress = model.progress[job.id] {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(job.state == .running ? "Live activity" : "Last reported activity").font(.caption).foregroundStyle(.secondary)
+                        LabeledContent("Prepared", value: "\(progress.checked) of \(progress.total) files")
+                        LabeledContent("Uploaded or reused", value: "\(progress.uploaded) of \(progress.uploadTotal) files")
+                        LabeledContent("Data sent", value: progress.transferred)
+                        LabeledContent("Committed", value: "\(progress.committed) files")
+                        LabeledContent("Commits", value: "\(progress.commits)")
+                    }.font(.caption).monospacedDigit()
+                }
                 if job.state == .running {
-                    Text("Hugging Face prepares, transfers, and commits files. Detailed activity appears in the log; an exact overall percentage isn’t available.").font(.caption).foregroundStyle(.secondary)
+                    Text("Preparation, transfer, and commits overlap. Already-uploaded content may be reused; only files needing transfer count toward that stage.").font(.caption).foregroundStyle(.secondary)
                     Button("Stop uploads", systemImage: "stop.circle") { model.stop() }
                 } else if job.state != .completed {
                     Button(job.state == .queued ? "Start upload" : "Resume upload", systemImage: "play.fill") { model.resume(job.id) }.buttonStyle(.borderedProminent)

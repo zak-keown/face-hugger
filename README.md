@@ -17,7 +17,7 @@ Face Hugger wraps the official `hf upload` CLI in a SwiftUI app with a persisten
 - Connect with a Keychain-stored token or an existing Hugging Face CLI login.
 - Keep uploads running when the window closes, optionally prevent idle system sleep, and receive completion notifications.
 
-Progress is honest: the app displays activity and HF logs without inventing a percentage. Preparation, transfer, and commits can overlap. Files may become visible in multiple commits before the entire job finishes.
+Progress is honest: the app displays the CLI’s reported preparation, upload/reuse, data-transfer, and commit counts without inventing an overall percentage. Unknown output formats fall back to readable logs. Stages can overlap, and files may become visible in multiple commits before the entire job finishes.
 
 ## Build and run
 
@@ -47,7 +47,7 @@ Closing the window leaves the app and its uploads running in the menu bar. Quitt
 - Logs are bounded and session-only. Queue metadata and completed-job history are saved locally.
 - Source folders remain live: jobs store a path, not a snapshot. Changing files between attempts changes what the resumed job uploads.
 - Repository management covers models and datasets, browsing, creation, and individual file deletion. It does not include Spaces, branches, file moves, card editing, or whole-repository deletion.
-- HF credentials and a real destination are needed to test an upload. Automated tests use mocks and local subprocesses; they do not upload to or mutate your repositories.
+- Default automated tests use mocks and local subprocesses; they do not upload to or mutate your repositories. An opt-in live test exercises real uploads and repository operations with temporary synthetic data.
 
 ## Checks
 
@@ -62,6 +62,16 @@ Scripts/check.sh --build
 ```
 
 The GitHub Actions workflow runs both suites and an ad-hoc-signed app build on a macOS runner. See [architecture](docs/architecture.md) and [visual direction](docs/design.md) for implementation details.
+
+### Optional live integration test
+
+After app runtime setup, run:
+
+```sh
+"$HOME/Library/Application Support/Face Hugger/runtime/bin/python3" Scripts/live_smoke.py --run-live
+```
+
+This explicitly creates a temporary **private model** and **public dataset** in your authenticated HF account, uploads synthetic fixtures including a 64 MiB random file, checks downloaded hashes, interrupts/resumes the CLI, and exercises replacement and deletion. It deletes the test repos in a `finally` block and verifies their absence. A temporary ledger records exact repository IDs before creation and any cleanup failures. Do not run it without permission to create and delete repositories. It never uploads your project files and is excluded from CI. See [verification results](docs/verification.md).
 
 ## Upload engine
 

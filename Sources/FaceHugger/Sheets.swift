@@ -58,7 +58,8 @@ struct UploadSheet: View {
         let path = destination.trimmingCharacters(in: .whitespacesAndNewlines)
         if let problem = UploadValidation.error(source: model.draftSource, repo: name, destination: path) { validation = problem; return }
         guard model.runtimeReady else { validation = "Set up upload tools in Settings first."; return }
-        let repo = model.repos.first { $0.name == name && $0.kind == kind } ?? HubRepo(name: name, kind: kind)
+        let selectedRepo = model.currentRepo.flatMap { $0.name == name && $0.kind == kind ? $0 : nil }
+        let repo = model.repos.first { $0.name == name && $0.kind == kind } ?? selectedRepo ?? HubRepo(name: name, kind: kind)
         model.addJob(UploadJob(source: model.draftSource, repo: repo, destination: path, includes: patterns(includes), excludes: patterns(excludes)), start: start)
         dismiss()
     }

@@ -24,12 +24,15 @@ final class AppModel {
     var installing = false
     var setupLog = ""
     var logs: [UUID: String] = [:]
+    var progress: [UUID: UploadProgress] = [:]
     var keepAwake = true
-    var queuePaused = true
+    private var queueControl = UploadQueueControl()
     private var token: String?
     private var runner: CommandProcess?
     private var activity: NSObjectProtocol?
     private var browseGeneration = UUID()
+    private var repoRefreshGeneration = UUID()
+    private var newlyCreatedRepos: [String: (repo: HubRepo, date: Date)] = [:]
     private let archive = QueueArchive(url: AppPaths.support.appendingPathComponent("queue.json"))
     var activeJob: UploadJob? { jobs.first { $0.state == .running } }
     var selectedJob: UploadJob? { jobs.first { $0.id == selectedJobID } }
@@ -65,11 +68,18 @@ final class AppModel {
     }
     func refreshRepos(owner: String? = nil) async {
         guard let owner = owner ?? (selectedOwner.isEmpty ? identity?.name : selectedOwner) else { return }
-        loading = true; defer { loading = false }
+        let generation = UUID(); repoRefreshGeneration = generation
+        loading = true; defer { if repoRefreshGeneration == generation { loading = false } }
         do {
             let result: [RepoResponse] = try await HubService.request(["repos", "--owner", owner], token: token)
-            repos = result.map(\.repo).sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        } catch { self.error = error.localizedDescription }
+            guard repoRefreshGeneration == generation else { return }
+            var received = result.map(\.repo)
+            let ids = Set(received.map(\.id))
+            // HF's search-backed listings can lag behind successful creation.
+            newlyCreatedRepos = newlyCreatedRepos.filter { !ids.contains($0.key) && Date().timeIntervalSince($0.value.date) < 120 }
+            received += newlyCreatedRepos.values.map(\.repo).filter { $0.name.hasPrefix(owner + "/") }
+            repos = received.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        } catch { if repoRefreshGeneration == generation { self.error = error.localizedDescription } }
     }
     func browse(_ repo: HubRepo, path: String = "") async {
         let generation = UUID(); browseGeneration = generation
@@ -85,6 +95,8 @@ final class AppModel {
         loading = true; defer { loading = false }
         do {
             let response: RepoResponse = try await HubService.request(["create", "--repo", name, "--type", kind.rawValue, "--private", String(isPrivate)], token: token)
+            newlyCreatedRepos[response.repo.id] = (response.repo, Date())
+            selectedOwner = String(name.split(separator: "/")[0])
             await refreshRepos(); sidebar = response.repo.id; await browse(response.repo); showCreateRepo = false
         } catch { self.error = error.localizedDescription }
     }
@@ -102,34 +114,36 @@ final class AppModel {
     }
     func addJob(_ job: UploadJob, start: Bool) {
         jobs.append(job); selectedJobID = job.id; sidebar = "uploads"; persist()
-        if start { queuePaused = false; runNext() }
+        if start { queueControl.start(preferredJobID: job.id); runNext() }
     }
     func resume(_ id: UUID) {
         guard let index = jobs.firstIndex(where: { $0.id == id }), jobs[index].state != .running else { return }
         jobs[index].state = .queued; jobs[index].message = "Ready to resume"; jobs[index].finishedAt = nil
-        queuePaused = false; persist(); runNext()
+        queueControl.start(preferredJobID: id); persist(); runNext()
     }
-    func startQueue() { queuePaused = false; runNext() }
-    func stop() { queuePaused = true; runner?.stop() }
-    func remove(_ id: UUID) { guard jobs.first(where: { $0.id == id })?.state != .running else { return }; jobs.removeAll { $0.id == id }; logs.removeValue(forKey: id); persist() }
+    func startQueue() { queueControl.start(); runNext() }
+    func stop() { queueControl.stop(); runner?.stop() }
+    func remove(_ id: UUID) { guard jobs.first(where: { $0.id == id })?.state != .running else { return }; jobs.removeAll { $0.id == id }; logs.removeValue(forKey: id); progress.removeValue(forKey: id); persist() }
     func move(from: IndexSet, to: Int) { jobs.move(fromOffsets: from, toOffset: to); persist() }
     func runNext() {
-        guard !queuePaused, runner == nil, let index = jobs.firstIndex(where: { $0.state == .queued }) else { return }
+        guard runner == nil else { return }
         guard runtimeReady else { showSettings = true; return }
+        guard let nextID = queueControl.beginNext(in: jobs), let index = jobs.firstIndex(where: { $0.id == nextID }) else { return }
         let job = jobs[index]
         if let problem = UploadValidation.error(source: job.source, repo: job.repo.name, destination: job.destination) {
-            jobs[index].state = .failed; jobs[index].message = problem; persist(); queuePaused = true; return
+            jobs[index].state = queueControl.finish(job.id, exitStatus: -1) ?? .failed
+            jobs[index].message = problem; persist(); return
         }
         jobs[index].state = .running; jobs[index].message = "Starting upload…"; persist()
+        progress.removeValue(forKey: job.id)
         if keepAwake { activity = ProcessInfo.processInfo.beginActivity(options: [.idleSystemSleepDisabled, .userInitiated], reason: "Uploading files to Hugging Face") }
         let command = CommandProcess(); runner = command
         let collector = LineCollector(limit: 600)
         var args = [AppPaths.bridge, "upload", "--repo", job.repo.name, "--type", job.repo.kind.rawValue, "--source", job.source, "--destination", job.destination]
         for pattern in job.includes { args += ["--include", pattern] }
         for pattern in job.excludes { args += ["--exclude", pattern] }
+        Task { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) }
         Task {
-            let center = UNUserNotificationCenter.current()
-            _ = try? await center.requestAuthorization(options: [.alert, .sound])
             var status: Int32 = -1
             do {
                 status = try await command.run(executable: AppPaths.python, arguments: args, token: token) { line in
@@ -152,6 +166,9 @@ final class AppModel {
         var display = line
         if let data = line.data(using: .utf8), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             display = object["message"] as? String ?? ""
+            if object["event"] as? String == "progress", let reported = try? JSONDecoder().decode(UploadProgress.self, from: data) {
+                progress[jobID] = reported; jobs[index].fileCount = reported.total; jobs[index].message = reported.summary
+            }
             if let event = object["event"] as? String, ["status", "error"].contains(event) { jobs[index].message = display }
         }
         if !display.isEmpty {
@@ -161,14 +178,19 @@ final class AppModel {
         }
     }
     private func finish(_ id: UUID, status: Int32) {
+        guard let state = queueControl.finish(id, exitStatus: status) else { return }
         if let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         runner = nil
         guard let index = jobs.firstIndex(where: { $0.id == id }) else { return }
-        if queuePaused { jobs[index].state = .stopped; jobs[index].message = "Stopped. Already committed files remain in the repo." }
-        else if status == 0 { jobs[index].state = .completed; jobs[index].message = "Upload complete"; jobs[index].finishedAt = Date() }
-        else { jobs[index].state = .failed; queuePaused = true; if jobs[index].message == "Starting upload…" { jobs[index].message = "Upload failed. Inspect the log and resume when ready." } }
+        jobs[index].state = state
+        switch state {
+        case .stopped: jobs[index].message = "Stopped. Already committed files remain in the repo."
+        case .completed: jobs[index].message = "Upload complete"; jobs[index].finishedAt = Date()
+        case .failed: if jobs[index].message == "Starting upload…" { jobs[index].message = "Upload failed. Inspect the log and resume when ready." }
+        default: break
+        }
         persist()
-        let content = UNMutableNotificationContent(); content.title = jobs[index].state == .completed ? "Upload complete" : "Upload stopped"; content.body = jobs[index].title
+        let content = UNMutableNotificationContent(); content.title = state == .completed ? "Upload complete" : state == .failed ? "Upload needs attention" : "Upload stopped"; content.body = jobs[index].title
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id.uuidString, content: content, trigger: nil))
         runNext()
     }

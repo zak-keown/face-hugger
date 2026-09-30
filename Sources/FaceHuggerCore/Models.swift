@@ -21,6 +21,22 @@ public enum JobState: String, Codable, Sendable {
     public var label: String { rawValue.capitalized }
 }
 
+/// Counts reported by the pinned HF CLI; stages overlap and are not an overall percentage.
+public struct UploadProgress: Decodable, Sendable {
+    public var checked: Int
+    public var total: Int
+    public var uploaded: Int
+    public var uploadTotal: Int
+    public var transferred: String
+    public var committed: Int
+    public var commits: Int
+    enum CodingKeys: String, CodingKey {
+        case checked, total, uploaded, transferred, committed, commits
+        case uploadTotal = "upload_total"
+    }
+    public var summary: String { "\(checked)/\(total) checked · \(uploaded)/\(uploadTotal) uploaded or reused · \(committed) committed" }
+}
+
 public struct UploadJob: Identifiable, Codable, Sendable {
     public var id: UUID
     public var source: String

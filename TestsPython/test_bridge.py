@@ -168,6 +168,29 @@ sys.exit(bridge.main(['upload', '--repo', 'alice/model', '--source', '/tmp']))
         bridge.execute(bridge.parser().parse_args(["tree", "--repo", "alice/model"]), api)
         self.assertEqual(self.events()[0]["data"], [{"path": "weights", "type": "directory", "size": 0}, {"path": "README.md", "type": "file", "size": 42}])
 
+    def test_actual_hf_progress_summary(self):
+        self.assertEqual(bridge.parse_progress("Uploading... 3/3 files checked, 0/1 uploaded (0.00B transferred), 0 committed in 0 commit(s)"),
+                         {"checked": 3, "total": 3, "uploaded": 0, "upload_total": 1, "transferred": "0.00B", "committed": 0, "commits": 0})
+
+    def test_progress_large_counts_and_validation_suffix(self):
+        self.assertEqual(bridge.parse_progress("Uploading... 1,203/2,000 files checked, 400/603 uploaded (3.80GB transferred), 1,000 committed in 4 commit(s), validating 86%"),
+                         {"checked": 1203, "total": 2000, "uploaded": 400, "upload_total": 603, "transferred": "3.80GB", "committed": 1000, "commits": 4})
+
+    def test_unknown_or_inconsistent_progress_is_not_interpreted(self):
+        for message in ("Install the HF skill", "Uploading... 3 files done", "Uploading... 3/2 files checked, 0/1 uploaded (0.00B transferred), 0 committed in 0 commit(s)",
+                        "Uploading... 3/3 files checked, 2/1 uploaded (0.00B transferred), 0 committed in 0 commit(s)",
+                        "Uploading... 3/3 files checked, 0/1 uploaded (0.00B transferred), 0 committed in 0 commit(s) unknown format", "Uploading… 3/3 files checked"):
+            self.assertIsNone(bridge.parse_progress(message), message)
+
+    def test_known_progress_emits_counts_and_retains_original_log(self):
+        summary = "Uploading... 3/3 files checked, 1/1 uploaded (32.8kB transferred), 3 committed in 1 commit(s)"
+        script = "print(" + repr(summary) + "); print('Unknown future progress format')"
+        with patch.object(bridge, "upload_command", return_value=[sys.executable, "-c", script]):
+            bridge.upload(SimpleNamespace(repo="alice/model", type="model"), Mock())
+        events = self.events()
+        self.assertEqual(sum(e["event"] == "progress" for e in events), 1)
+        self.assertEqual([e["message"] for e in events if e["event"] == "log"], [summary, "Unknown future progress format"])
+
     def test_token_and_ansi_are_removed(self):
         with patch.dict(os.environ, {"HF_TOKEN": "an unusual secret"}):
             bridge.emit("error", message="\x1b[31man unusual secret hf_abcdefghijk\x1b[0m")

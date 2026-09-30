@@ -38,22 +38,25 @@ struct RepoBrowser: View {
                 Table(model.entries.filter { search.isEmpty || $0.path.localizedCaseInsensitiveContains(search) }, selection: $selection) {
                     TableColumn("Name") { entry in
                         HStack { Image(systemName: entry.isDirectory ? "folder.fill" : "doc").foregroundStyle(entry.isDirectory ? .blue : .secondary); Text(entry.name) }
-                            .contextMenu {
-                                if entry.isDirectory { Button("Open folder") { Task { await model.browse(repo, path: entry.path) } } }
-                                else {
-                                    Button("Open on Hugging Face") { open(entry) }
-                                    Button("Copy link") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(fileURL(entry).absoluteString, forType: .string) }
-                                    Divider()
-                                    Button("Delete file…", role: .destructive) { pendingDelete = entry }
-                                }
-                            }
-                            .onTapGesture(count: 2) { if entry.isDirectory { Task { await model.browse(repo, path: entry.path) } } else { open(entry) } }
                     }
                     TableColumn("Size") { entry in Text(entry.isDirectory ? "—" : ByteCountFormatter.string(fromByteCount: entry.size ?? 0, countStyle: .file)).foregroundStyle(.secondary).monospacedDigit() }.width(100)
                 }
+                .contextMenu(forSelectionType: String.self) { ids in
+                    if let id = ids.first, let entry = model.entries.first(where: { $0.id == id }) {
+                        if entry.isDirectory { Button("Open folder") { activate(entry) } }
+                        else {
+                            Button("Open on Hugging Face") { open(entry) }
+                            Button("Copy link") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(fileURL(entry).absoluteString, forType: .string) }
+                            Divider()
+                            Button("Delete file…", role: .destructive) { pendingDelete = entry }
+                        }
+                    }
+                } primaryAction: { ids in
+                    if let id = ids.first, let entry = model.entries.first(where: { $0.id == id }) { activate(entry) }
+                }
             }
             Divider()
-            HStack { Text("\(model.entries.count) items"); Spacer(); Text("Drop a folder to upload here") }.font(.caption).foregroundStyle(.secondary).padding(12)
+            HStack { Text("\(model.entries.count) \(model.entries.count == 1 ? "item" : "items")"); Spacer(); Text("Drop a folder to upload here") }.font(.caption).foregroundStyle(.secondary).padding(12)
         }
         .confirmationDialog("Delete \(pendingDelete?.name ?? "file")?", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })) {
             if let entry = pendingDelete { Button("Delete file", role: .destructive) { Task { await model.delete(entry, from: repo) }; pendingDelete = nil } }
@@ -61,5 +64,9 @@ struct RepoBrowser: View {
         } message: { Text("This creates a deletion commit on \(repo.name). It does not erase the file from the repository’s history.") }
     }
     private func fileURL(_ entry: RemoteEntry) -> URL { repo.url.appendingPathComponent("blob/main").appendingPathComponent(entry.path) }
+    private func activate(_ entry: RemoteEntry) {
+        if entry.isDirectory { Task { await model.browse(repo, path: entry.path) } }
+        else { open(entry) }
+    }
     private func open(_ entry: RemoteEntry) { NSWorkspace.shared.open(fileURL(entry)) }
 }

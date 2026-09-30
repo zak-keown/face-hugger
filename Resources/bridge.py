@@ -2,7 +2,8 @@
 """Face Hugger's JSON-lines bridge. Tokens arrive through HF_TOKEN, never argv.
 
 Every output line is a JSON object with `event`. Commands other than upload emit
-one `result` with `data`; uploads emit `status`, `log`, and finally `complete`.
+one `result` with `data`; uploads emit `status`, `log`, recognized `progress`
+counts, and finally `complete`.
 Errors emit `error` and exit nonzero. SIGINT/SIGTERM stop the entire CLI process
 session before the bridge exits. Rerunning an upload lets HF deduplicate content.
 """
@@ -44,6 +45,33 @@ def emit(event: str, **fields) -> None:
             return [clean(item) for item in value]
         return value
     print(json.dumps(clean({"event": event, **fields}), ensure_ascii=False), file=_PROTOCOL, flush=True)
+
+
+
+_COUNT = r"(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)"
+_PROGRESS = re.compile(
+    rf"Uploading\.\.\. (?P<checked>{_COUNT})/(?P<total>{_COUNT}) files checked, "
+    rf"(?P<uploaded>{_COUNT})/(?P<upload_total>{_COUNT}) uploaded "
+    r"\((?P<transferred>[0-9]+(?:\.[0-9]+)?(?:B|kB|MB|GB|TB|PB)) transferred\), "
+    rf"(?P<committed>{_COUNT}) committed in (?P<commits>[0-9]+) commit\(s\)"
+    r"(?:, validating (?:100|[0-9]{1,2})%)?"
+)
+
+
+def parse_progress(message: str):
+    """Recognize only HF 2.0's non-TTY summary; unknown versions stay logs.
+
+    Counts are pipeline snapshots, not sequential stage completion or an overall
+    percentage. upload_total is Xet files; it can differ from checked total.
+    """
+    match = _PROGRESS.fullmatch(_ANSI.sub("", message).strip())
+    if match is None:
+        return None
+    values = {key: int(value.replace(",", "")) if key != "transferred" else value
+              for key, value in match.groupdict().items()}
+    if values["checked"] > values["total"] or values["uploaded"] > values["upload_total"] or values["committed"] > values["total"]:
+        return None
+    return values
 
 
 def repo_url(repo: str, kind: str) -> str:
@@ -131,6 +159,8 @@ def upload(args, api) -> None:
             message = line.strip()
             if message:
                 emit("log", message=message[-8192:])
+                if progress := parse_progress(message):
+                    emit("progress", **progress)
         code = _CHILD.wait()
         if code:
             raise RuntimeError(f"HF upload exited with status {code}. Review the upload log and retry.")

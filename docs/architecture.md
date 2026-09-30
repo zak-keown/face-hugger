@@ -7,7 +7,7 @@ Face Hugger is a macOS 15+ SwiftUI app with a small Python bridge to the officia
 | Component | Responsibility |
 | --- | --- |
 | `Sources/FaceHugger` | SwiftUI interface, account state, queue scheduling, menu bar, notifications, sleep activity, subprocess execution |
-| `Sources/FaceHuggerCore` | Codable job/repository models, input validation, atomic queue persistence and interrupted-job recovery |
+| `Sources/FaceHuggerCore` | Job/repository models, reported progress, scheduling/cancellation state, input validation, atomic queue persistence and interrupted-job recovery |
 | `Resources/bridge.py` | JSONL protocol, HF SDK repository operations, CLI upload process supervision |
 | `requirements.txt` | Pin for the managed Hugging Face runtime |
 | `Resources/Assets.xcassets` | Native app icon and mascot |
@@ -31,6 +31,10 @@ Both the Swift subprocess reader and the bridge redact tokens from displayed out
 Jobs contain a local folder path, repository identity/type, remote destination, filters, timestamps, state, and last status message. There are no file snapshots or credentials in the archive. On load, a saved `running` job becomes `interrupted`; other states remain intact. The queue is paused on launch.
 
 Only one upload runs at a time. Success advances to the next queued job. A failure pauses the queue. Stop requests terminate the current bridge process and keep the queue paused. Resume moves the job back to the queue and invokes the same upload command against the current contents of its source folder.
+
+`UploadQueueControl` separates scheduling intent from the active worker’s cancellation latch. Restarting a queue while a stop is being acknowledged cannot turn the old worker’s cancellation into a failure. Explicit Start/Resume prioritizes the chosen job. Stale completion callbacks are ignored, and a drained queue becomes paused. Notification authorization runs independently so it cannot delay the worker’s launch.
+
+Newly created repositories are retained in the sidebar briefly while HF’s search-backed listing catches up. A generation token prevents stale owner-list responses from replacing newer selections.
 
 The app holds a process activity to prevent idle system sleep when enabled. This does not permit uploading during system sleep or after explicit application termination. Notification permission is requested when starting an upload.
 
@@ -57,6 +61,7 @@ Standard output contains JSON objects, one per line:
 | `result` | `data` | Successful SDK command result |
 | `status` | `message` | Upload activity description |
 | `log` | `message` | Redacted output from the upload CLI |
+| `progress` | `checked`, `total`, `uploaded`, `upload_total`, `transferred`, `committed`, `commits` | Counts from a recognized HF 2.0 progress line |
 | `complete` | `url` | Upload CLI exited successfully |
 | `error` | `message` | Command failed or was interrupted |
 
@@ -82,7 +87,7 @@ The bridge checks that the destination repository exists before launching the CL
 
 The CLI child gets its own process session. SIGINT/SIGTERM delivered to the bridge is forwarded to that process group, and the bridge waits for the child. After eight seconds it escalates to SIGKILL and reaps the child. Cancellation during process creation is deferred until the child handle is available, preventing an orphaned upload in that narrow race.
 
-Stopping is not rollback. HF may already have committed some files. Rerunning uses HF’s resumable, deduplicating pipeline. The app does not infer precise byte progress or separate sequential phases from unstructured CLI logs.
+Stopping is not rollback. HF may already have committed some files. Rerunning uses HF’s resumable, deduplicating pipeline. An exact-format parser extracts counts from the pinned CLI’s progress summary, including its optional validation suffix. Unknown formats retain log-only behavior. These are overlapping stage counters, not an overall percentage. Uploaded counts can include reused content, so the UI says “uploaded or reused.” Sampled counters are hidden on successful completion because the CLI can exit without printing a final counter update.
 
 The app’s quit delegate waits for its active job to finish stopping before replying to the termination request. There is no launch agent in this version.
 
@@ -90,6 +95,6 @@ The app’s quit delegate waits for its active job to finish stopping before rep
 
 Swift tests exercise validation and queue persistence/recovery. Python tests exercise protocol output, filtering arguments, path validation, explicit creation visibility, token redaction, missing-repo checks, successful/failed CLI exits, and signal delivery to actual local subprocesses. They require no network or credentials.
 
-The SDK/CLI integration was additionally checked against the pinned runtime and an anonymous, read-only public repository listing. No automated authenticated upload, delete, or create is performed.
+The opt-in `Scripts/live_smoke.py --run-live` additionally checks authenticated private-model and public-dataset operations, hashes, filters, replacement, deletion, interruption, and resume. It uses only synthetic files and deletes its temporary repositories. It is never run by default or in CI. Native UI verification also exercises creation, upload, stop/relaunch/resume, browsing, and deletion. See [verification results](verification.md).
 
-CI also builds the application with ad-hoc signing. This is build verification, not a distribution release: signing with a Developer ID, notarization, a bundled or more self-contained runtime installer, and broader authenticated end-to-end testing remain release work.
+CI also builds the application with ad-hoc signing. This is build verification, not a distribution release: signing with a Developer ID, notarization, a bundled or more self-contained runtime installer, and testing under prolonged outages or multi-terabyte workloads remain release work.

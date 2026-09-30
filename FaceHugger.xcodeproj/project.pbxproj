@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0567DC6C5094F13912B74184 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA1D44DC5B7FFD67051296 /* Models.swift */; };
+		298481F80C2635E8BA816699 /* UploadQueueControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */; };
 		33D0E52753A98C9585966907 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2050DFC39D4E98D1893B50F /* Services.swift */; };
 		386B6880ECC2143F963A85DF /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B49DCA59F65A1B0D8E253451 /* Sheets.swift */; };
 		44C49A71382B06A9FC2A17DF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 551CCA4B4D77240C93F7DE7F /* Assets.xcassets */; };
@@ -24,6 +25,7 @@
 		551CCA4B4D77240C93F7DE7F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceHuggerApp.swift; sourceTree = "<group>"; };
 		A2050DFC39D4E98D1893B50F /* Services.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services.swift; sourceTree = "<group>"; };
+		A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadQueueControl.swift; sourceTree = "<group>"; };
 		A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoBrowser.swift; sourceTree = "<group>"; };
 		A8BEBDC316A4528BCF27BAA7 /* FaceHugger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FaceHugger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4429FC49D860F2CEB1BA756 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -38,6 +40,7 @@
 			isa = PBXGroup;
 			children = (
 				CEEA1D44DC5B7FFD67051296 /* Models.swift */,
+				A509241EB73D444B8EBF2EC9 /* UploadQueueControl.swift */,
 			);
 			name = FaceHuggerCore;
 			path = Sources/FaceHuggerCore;
@@ -164,6 +167,7 @@
 				6245C0905AE4F4A28AEEFFE2 /* RepoBrowser.swift in Sources */,
 				33D0E52753A98C9585966907 /* Services.swift in Sources */,
 				386B6880ECC2143F963A85DF /* Sheets.swift in Sources */,
+				298481F80C2635E8BA816699 /* UploadQueueControl.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
