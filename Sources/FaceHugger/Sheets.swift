@@ -10,12 +10,17 @@ struct SettingsSheet: View {
             Text("Account and upload tools").font(.title2.weight(.semibold))
             Form {
                 Section("Upload tools") {
+                    if AppPaths.isStoreEdition {
+                        Label(model.runtimeReady ? "Upload tools are included" : "Upload tools are missing", systemImage: model.runtimeReady ? "checkmark.circle.fill" : "exclamationmark.triangle")
+                        Text("Upload tools are updated with the app through the App Store.").font(.caption).foregroundStyle(.secondary)
+                    } else {
                     Text("One-time setup downloads Python and Hugging Face tools. An internet connection is required; no terminal setup is needed.").font(.system(size: 12)).foregroundStyle(.secondary)
                     Label(model.runtimeReady ? "Hugging Face tools are ready" : "Set up Hugging Face tools", systemImage: model.runtimeReady ? "checkmark.circle.fill" : "shippingbox")
-                    Text("Face Hugger uses an isolated Python environment for the official Hugging Face CLI. Setup requires uv and an internet connection.").font(.caption).foregroundStyle(.secondary)
+                    Text("Python and upload tools are version-pinned and installed in Face Hugger’s support folder.").font(.caption).foregroundStyle(.secondary)
                     HStack { Button(model.runtimeReady ? "Repair upload tools" : "Set up upload tools") { Task { await model.installRuntime() } }.disabled(model.installing || model.activeJob != nil); if model.installing { ProgressView().controlSize(.small) } }
                     if !model.setupLog.isEmpty {
                         ScrollView { Text(model.setupLog).font(.system(.caption, design: .monospaced)).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled) }.frame(height: 90)
+                    }
                     }
                 }
                 Section("Hugging Face account") {
@@ -24,7 +29,7 @@ struct SettingsSheet: View {
                         Button("Remove saved account") { model.disconnect() }.disabled(model.activeJob != nil)
                     }
                     SecureField("Access token", text: $token, prompt: Text("hf_…"))
-                    Text("Use a token with write access to your target repositories. It’s stored in your Mac’s Keychain. Leave this blank to use an existing Hugging Face CLI login.").font(.caption).foregroundStyle(.secondary)
+                    Text(AppPaths.isStoreEdition ? "Use a token with write access to your target repositories. It’s stored in your Mac’s Keychain." : "Use a token with write access to your target repositories. It’s stored in your Mac’s Keychain. Leave this blank to use an existing Hugging Face CLI login.").font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Link("Create a token", destination: URL(string: "https://huggingface.co/settings/tokens")!)
                         Spacer()
@@ -38,7 +43,11 @@ struct SettingsSheet: View {
                 }
             }.formStyle(.grouped)
             ErrorBanner(model: model)
-            HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
+            HStack {
+                Link("Privacy policy", destination: URL(string: "https://github.com/zak-keown/face-hugger/blob/main/docs/privacy.md")!)
+                Link("Open-source notices", destination: URL(string: "https://github.com/zak-keown/face-hugger/tree/main/Resources/ThirdParty")!)
+                Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
+            }
         }.padding(24).frame(width: 560, height: 650)
     }
 }

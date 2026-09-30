@@ -18,7 +18,7 @@ The Swift package builds the independently testable core. XcodeGen’s `project.
 
 ## Runtime and credentials
 
-Setup locates `uv` or downloads a pinned official release with SHA-256 verification, then creates an isolated Python 3.12 environment, and installs the pinned requirements. The app uses `~/Library/Application Support/Face Hugger/runtime/bin/python3`. A readiness marker is written after successful setup; an incomplete environment is not considered ready.
+Direct-build setup downloads a pinned official uv release with SHA-256 verification, then installs Python 3.12.14 in the app's support directory and synchronizes the complete checksum-locked requirements. The app uses `~/Library/Application Support/Face Hugger/runtime-v3/bin/python3`; Python installations and setup caches use explicit subdirectories beside it. A readiness marker is written after successful setup; an incomplete environment is not considered ready. The older runtime is preserved during migration. Store builds use an embedded runtime and compile out the installation flow.
 
 The app stores its optional token in the macOS Keychain under service `dev.zakkeown.FaceHugger`, account `huggingface`. It passes that token in `HF_TOKEN`, never as a command-line argument or in the queue archive. With no app token, Hugging Face can use the existing CLI login. Removing the saved app account only removes the app’s Keychain item.
 

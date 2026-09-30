@@ -4,10 +4,7 @@ import CryptoKit
 /// Bootstrap stays in the app's support directory and never edits shell profiles.
 enum RuntimeBootstrap {
     static let version = "0.12.18"
-    static let systemCandidates = ["/opt/homebrew/bin/uv", "/usr/local/bin/uv", NSHomeDirectory() + "/.local/bin/uv"]
-
-    static func prepare(in support: URL, candidates: [String] = systemCandidates) async throws -> String {
-        if let installed = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) { return installed }
+    static func prepare(in support: URL) async throws -> String {
         #if arch(arm64)
         let platform = "aarch64-apple-darwin"
         let checksum = "cf40e0c6a202190ccd9e0406dcfdd5b2d6668a9a5c779b17948963df32aafe5b"

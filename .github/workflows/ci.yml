@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12.14'
       - name: Toolchain
         run: |
           xcodebuild -version
@@ -25,5 +25,7 @@ jobs:
           python3 --version
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Install locked upload dependencies
+        run: python3 -m pip install --require-hashes --only-binary=:all: -r Resources/runtime-requirements.txt
       - name: Test and build
         run: Scripts/check.sh --build

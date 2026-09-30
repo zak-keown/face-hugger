@@ -22,7 +22,12 @@ targets:
         excludes:
           - '**/__pycache__/**'
           - '**/*.pyc'
+          - '*.entitlements'
           - Artwork
+          - ThirdParty
+      - path: Resources/ThirdParty
+        type: folder
+        buildPhase: resources
       - path: requirements.txt
         buildPhase: resources
     settings:

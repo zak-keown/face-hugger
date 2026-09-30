@@ -40,6 +40,7 @@ public struct UploadProgress: Decodable, Sendable {
 public struct UploadJob: Identifiable, Codable, Sendable {
     public var id: UUID
     public var source: String
+    public var sourceBookmark: Data?
     public var repo: HubRepo
     public var destination: String
     public var includes: [String]
@@ -50,7 +51,8 @@ public struct UploadJob: Identifiable, Codable, Sendable {
     public var message: String
     public var fileCount: Int
     public var byteCount: Int64
-    public init(source: String, repo: HubRepo, destination: String = "", includes: [String] = [], excludes: [String] = [], fileCount: Int = 0, byteCount: Int64 = 0) {
+    public init(source: String, repo: HubRepo, destination: String = "", includes: [String] = [], excludes: [String] = [], fileCount: Int = 0, byteCount: Int64 = 0, sourceBookmark: Data? = nil) {
+        self.sourceBookmark = sourceBookmark
         id = UUID(); self.source = source; self.repo = repo; self.destination = destination
         self.includes = includes; self.excludes = excludes; self.fileCount = fileCount; self.byteCount = byteCount
         state = .queued; createdAt = Date(); message = "Ready to upload"

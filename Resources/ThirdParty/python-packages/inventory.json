@@ -1,0 +1,195 @@
+{
+  "packages": [
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "licenseExpression": "MIT",
+      "noticeFiles": [
+        {
+          "path": "python-packages/anyio-4.15.1/licenses/LICENSE",
+          "sha256": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0",
+          "runtimeRelativePath": "lib/python3.12/site-packages/anyio-4.15.1.dist-info/licenses/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "licenseExpression": "BSD-3-Clause",
+      "noticeFiles": [
+        {
+          "path": "python-packages/click-8.5.0/licenses/LICENSE.txt",
+          "sha256": "9a8ad106a394e853bfe21f42f4e72d592819a22805d991b5f3275029292b658d",
+          "runtimeRelativePath": "lib/python3.12/site-packages/click-8.5.0.dist-info/licenses/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "name": "filelock",
+      "version": "4.0.7",
+      "licenseExpression": "MIT",
+      "noticeFiles": [
+        {
+          "path": "python-packages/filelock-4.0.7/licenses/LICENSE",
+          "sha256": "608c89d5060ae9921adccf3236695bc654a9946e12323ef6c021dfa04e294d48",
+          "runtimeRelativePath": "lib/python3.12/site-packages/filelock-4.0.7.dist-info/licenses/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.9.0",
+      "licenseExpression": "BSD-3-Clause",
+      "noticeFiles": [
+        {
+          "path": "python-packages/fsspec-2026.9.0/licenses/LICENSE",
+          "sha256": "2dc35496ce53a7307915c008a844aad53e772b49b34cdd00445067691407ec94",
+          "runtimeRelativePath": "lib/python3.12/site-packages/fsspec-2026.9.0.dist-info/licenses/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "licenseExpression": "MIT",
+      "noticeFiles": [
+        {
+          "path": "python-packages/h11-0.16.0/licenses/LICENSE.txt",
+          "sha256": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361",
+          "runtimeRelativePath": "lib/python3.12/site-packages/h11-0.16.0.dist-info/licenses/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "name": "hf-xet",
+      "version": "1.6.0",
+      "licenseExpression": "Apache-2.0",
+      "noticeFiles": [
+        {
+          "path": "python-packages/hf-xet-1.6.0/licenses/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "runtimeRelativePath": "lib/python3.12/site-packages/hf_xet-1.6.0.dist-info/licenses/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.13.1",
+      "licenseExpression": "BSD-3-Clause",
+      "noticeFiles": [
+        {
+          "path": "python-packages/httpcore2-2.13.1/licenses/LICENSE.md",
+          "sha256": "c4df125c807b0613501e943a5c92496dd11d2c16604ce396097a8dde396304d9",
+          "runtimeRelativePath": "lib/python3.12/site-packages/httpcore2-2.13.1.dist-info/licenses/LICENSE.md"
+        }
+      ]
+    },
+    {
+      "name": "httpx2",
+      "version": "2.13.1",
+      "licenseExpression": "BSD-3-Clause",
+      "noticeFiles": [
+        {
+          "path": "python-packages/httpx2-2.13.1/licenses/LICENSE.md",
+          "sha256": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30",
+          "runtimeRelativePath": "lib/python3.12/site-packages/httpx2-2.13.1.dist-info/licenses/LICENSE.md"
+        }
+      ]
+    },
+    {
+      "name": "huggingface_hub",
+      "version": "2.0.0",
+      "licenseExpression": "Apache-2.0",
+      "noticeFiles": [
+        {
+          "path": "python-packages/huggingface_hub-2.0.0/licenses/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "runtimeRelativePath": "lib/python3.12/site-packages/huggingface_hub-2.0.0.dist-info/licenses/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "licenseExpression": "BSD-3-Clause",
+      "noticeFiles": [
+        {
+          "path": "python-packages/idna-3.20/licenses/LICENSE.md",
+          "sha256": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04",
+          "runtimeRelativePath": "lib/python3.12/site-packages/idna-3.20.dist-info/licenses/LICENSE.md"
+        }
+      ]
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "licenseExpression": "Apache-2.0 OR BSD-2-Clause",
+      "noticeFiles": [
+        {
+          "path": "python-packages/packaging-26.3/licenses/LICENSE",
+          "sha256": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48",
+          "runtimeRelativePath": "lib/python3.12/site-packages/packaging-26.3.dist-info/licenses/LICENSE"
+        },
+        {
+          "path": "python-packages/packaging-26.3/licenses/LICENSE.APACHE",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+          "runtimeRelativePath": "lib/python3.12/site-packages/packaging-26.3.dist-info/licenses/LICENSE.APACHE"
+        },
+        {
+          "path": "python-packages/packaging-26.3/licenses/LICENSE.BSD",
+          "sha256": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5",
+          "runtimeRelativePath": "lib/python3.12/site-packages/packaging-26.3.dist-info/licenses/LICENSE.BSD"
+        }
+      ]
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "licenseExpression": "MIT",
+      "noticeFiles": [
+        {
+          "path": "python-packages/PyYAML-6.0.3/licenses/LICENSE",
+          "sha256": "8d3928f9dc4490fd635707cb88eb26bd764102a7282954307d3e5167a577e8a4",
+          "runtimeRelativePath": "lib/python3.12/site-packages/pyyaml-6.0.3.dist-info/licenses/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.1",
+      "licenseExpression": "MPL-2.0 AND MIT",
+      "noticeFiles": [
+        {
+          "path": "python-packages/tqdm-4.70.1/licenses/LICENCE",
+          "sha256": "fcff87c3a47ce8028a8512aa182d4fcf0ad1c90544ee75cf9b343684cac194de",
+          "runtimeRelativePath": "lib/python3.12/site-packages/tqdm-4.70.1.dist-info/licenses/LICENCE"
+        }
+      ]
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.4",
+      "licenseExpression": "MIT",
+      "noticeFiles": [
+        {
+          "path": "python-packages/truststore-0.10.4/licenses/LICENSE",
+          "sha256": "33be7b7e8fa4fd19b1760e1a8ed8a668bdab852c91b692dd41424bcb725a9fca",
+          "runtimeRelativePath": "lib/python3.12/site-packages/truststore-0.10.4.dist-info/licenses/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "licenseExpression": "PSF-2.0",
+      "noticeFiles": [
+        {
+          "path": "python-packages/typing_extensions-4.16.0/licenses/LICENSE",
+          "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+          "runtimeRelativePath": "lib/python3.12/site-packages/typing_extensions-4.16.0.dist-info/licenses/LICENSE"
+        }
+      ]
+    }
+  ],
+  "status": "Wheel-supplied license texts retained; not a complete audit of compiled/vendored dependencies."
+}

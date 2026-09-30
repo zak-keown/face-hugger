@@ -18,6 +18,8 @@ final class AppModel {
     var showUpload = false
     var showCreateRepo = false
     var draftSource = ""
+    private var draftSourceBookmark: Data?
+    private var workspaceFolderAccess: FolderAccess?
     var draftIncludes: [String] = []
     var draftExcludes = [".DS_Store", "**/.DS_Store"]
     var staging: StagingResult?
@@ -36,7 +38,7 @@ final class AppModel {
     private let pairingArchive = PairingArchive(url: AppPaths.support.appendingPathComponent("pairings.json"))
     var selectedJobID: UUID?
     var sidebar = "uploads"
-    var runtimeReady = FileManager.default.isExecutableFile(atPath: AppPaths.python) && FileManager.default.fileExists(atPath: AppPaths.runtimeMarker.path)
+    var runtimeReady = AppPaths.runtimeReady
     var installing = false
     var setupLog = ""
     var logs: [UUID: String] = [:]
@@ -54,6 +56,7 @@ final class AppModel {
     var activeJob: UploadJob? { jobs.first { $0.state == .running } }
     var selectedJob: UploadJob? { jobs.first { $0.id == selectedJobID } }
     var hasExistingCredentials: Bool {
+        if AppPaths.isStoreEdition { return token != nil }
         let env = ProcessInfo.processInfo.environment
         let tokenFile = env["HF_TOKEN_PATH"] ?? (env["HF_HOME"] ?? NSHomeDirectory() + "/.cache/huggingface") + "/token"
         return token != nil || env["HF_TOKEN"] != nil || FileManager.default.fileExists(atPath: tokenFile)
@@ -89,7 +92,7 @@ final class AppModel {
         let generation = UUID(); repoRefreshGeneration = generation
         loading = true; defer { if repoRefreshGeneration == generation { loading = false } }
         do {
-            let result: [RepoResponse] = try await HubService.request(["repos", "--owner", owner], token: token)
+            let result: [RepoResponse] = try await HubService.request(["repos", "--owner", owner, "--stream"], token: token)
             guard repoRefreshGeneration == generation else { return }
             var received = result.map(\.repo)
             let ids = Set(received.map(\.id))
@@ -105,7 +108,7 @@ final class AppModel {
         currentRepo = repo; remotePath = path; entries = []; browseError = nil; loading = true
         invalidateComparison()
         do {
-            var arguments = ["tree", "--repo", repo.name, "--type", repo.kind.rawValue, "--path", path]
+            var arguments = ["tree", "--repo", repo.name, "--type", repo.kind.rawValue, "--path", path, "--stream"]
             if allowMissing { arguments.append("--allow-missing-path") }
             let result: [RemoteEntry] = try await HubService.request(arguments, token: token)
             guard browseGeneration == generation else { return }
@@ -136,11 +139,16 @@ final class AppModel {
     }
 
     func stageFolder(_ url: URL) {
+        let access: FolderAccess
+        do { access = try FolderAccess.selected(url) }
+        catch { self.error = "Could not retain access to this folder. Choose it again. \(error.localizedDescription)"; return }
         var directory: ObjCBool = false
         guard url.isFileURL, FileManager.default.fileExists(atPath: url.path, isDirectory: &directory), directory.boolValue else {
+            access.close()
             error = "Choose a local folder to upload."; return
         }
-        draftSource = url.path
+        workspaceFolderAccess = access
+        draftSource = access.url.path; draftSourceBookmark = access.bookmark
         scanSource()
     }
     func scanSource() {
@@ -148,12 +156,20 @@ final class AppModel {
         staging = nil; scanError = nil; scanning = false
         guard !draftSource.isEmpty else { return }
         guard runtimeReady else { scanError = "Set up upload tools to preview this folder."; return }
+        let sourceAccess: FolderAccess
+        do {
+            sourceAccess = try FolderAccess.restore(path: draftSource, bookmark: draftSourceBookmark)
+            draftSource = sourceAccess.url.path; draftSourceBookmark = sourceAccess.bookmark
+        } catch { scanError = error.localizedDescription; return }
         let generation = scanGeneration
         let process = CommandProcess(maxLineBytes: 16_000_000); scanProcess = process; scanning = true
         var args = ["scan", "--source", draftSource]
         for pattern in draftIncludes { args += ["--include", pattern] }
         for pattern in draftExcludes { args += ["--exclude", pattern] }
         Task {
+            // Keep this operation's own scope until its process actually ends,
+            // even if a newer scan or selected folder replaces the workspace.
+            defer { sourceAccess.close() }
             do {
                 let result: StagingResult = try await HubService.request(args, token: nil, process: process)
                 guard generation == scanGeneration else { return }
@@ -206,11 +222,16 @@ final class AppModel {
         panel.message = "Choose the source for this upload. Review its current files before resuming."
         guard panel.runModal() == .OK, let url = panel.url,
               let index = jobs.firstIndex(where: { $0.id == id }), jobs[index].state != .running else { return }
+        let access: FolderAccess
+        do { access = try FolderAccess.selected(url) }
+        catch { self.error = "Could not retain access to this folder. \(error.localizedDescription)"; return }
+        workspaceFolderAccess = access
         progress.removeValue(forKey: id)
-        jobs[index].source = url.path; jobs[index].state = .stopped
+        jobs[index].source = access.url.path; jobs[index].sourceBookmark = access.bookmark; jobs[index].state = .stopped
         jobs[index].message = "Source folder updated. Review files, then resume when ready."
         persist()
-        draftSource = url.path; draftIncludes = jobs[index].includes; draftExcludes = jobs[index].excludes
+        draftSource = access.url.path; draftSourceBookmark = access.bookmark
+        draftIncludes = jobs[index].includes; draftExcludes = jobs[index].excludes
         scanSource()
         let job = jobs[index]
         Task { await selectRepo(job.repo, path: job.destination) }
@@ -227,13 +248,25 @@ final class AppModel {
         } catch { if selectionGeneration == generation { self.error = error.localizedDescription } }
     }
     func applyPairing(_ pairing: SavedPairing) async {
-        draftSource = pairing.source; draftIncludes = pairing.includes; draftExcludes = pairing.excludes
+        let access: FolderAccess
+        do { access = try FolderAccess.restore(path: pairing.source, bookmark: pairing.sourceBookmark) }
+        catch { self.error = error.localizedDescription; return }
+        workspaceFolderAccess = access
+        draftSource = access.url.path; draftSourceBookmark = access.bookmark
+        draftIncludes = pairing.includes; draftExcludes = pairing.excludes
+        if let index = pairings.firstIndex(where: { $0.id == pairing.id }),
+           pairings[index].source != draftSource || pairings[index].sourceBookmark != access.bookmark {
+            var updated = pairings
+            updated[index].source = draftSource; updated[index].sourceBookmark = access.bookmark
+            do { try pairingArchive.save(updated); pairings = updated }
+            catch { self.error = "Could not save refreshed folder access: \(error.localizedDescription)" }
+        }
         scanSource()
         await selectRepo(pairing.repo, path: pairing.destination)
     }
     func savePairing(name: String) {
         guard let repo = currentRepo, !draftSource.isEmpty else { return }
-        let pairing = SavedPairing(name: name.trimmingCharacters(in: .whitespacesAndNewlines), source: draftSource, repo: repo, destination: remotePath, includes: draftIncludes, excludes: draftExcludes)
+        let pairing = SavedPairing(name: name.trimmingCharacters(in: .whitespacesAndNewlines), source: draftSource, repo: repo, destination: remotePath, includes: draftIncludes, excludes: draftExcludes, sourceBookmark: draftSourceBookmark)
         guard !pairing.name.isEmpty else { return }
         var updated = pairings; updated.append(pairing)
         do { try pairingArchive.save(updated); pairings = updated } catch { self.error = error.localizedDescription }
@@ -260,7 +293,7 @@ final class AppModel {
             // The controls may have changed while the request was running; never submit a different route.
             guard source == draftSource, destination == remotePath, repo.id == currentRepo?.id,
                   includes == draftIncludes, excludes == draftExcludes else { return }
-            addJob(UploadJob(source: source, repo: fresh.repo, destination: destination, includes: includes, excludes: excludes, fileCount: staging.includedCount, byteCount: staging.includedBytes), start: start)
+            addJob(UploadJob(source: source, repo: fresh.repo, destination: destination, includes: includes, excludes: excludes, fileCount: staging.includedCount, byteCount: staging.includedBytes, sourceBookmark: draftSourceBookmark), start: start)
         } catch { self.error = error.localizedDescription }
     }
 
@@ -281,8 +314,17 @@ final class AppModel {
         guard runner == nil else { return }
         guard runtimeReady else { showSettings = true; return }
         guard let nextID = queueControl.beginNext(in: jobs), let index = jobs.firstIndex(where: { $0.id == nextID }) else { return }
+        let sourceAccess: FolderAccess
+        do {
+            sourceAccess = try FolderAccess.restore(path: jobs[index].source, bookmark: jobs[index].sourceBookmark)
+            jobs[index].source = sourceAccess.url.path; jobs[index].sourceBookmark = sourceAccess.bookmark
+        } catch {
+            jobs[index].state = queueControl.finish(nextID, exitStatus: -1) ?? .failed
+            jobs[index].message = error.localizedDescription; persist(); return
+        }
         let job = jobs[index]
         if let problem = UploadValidation.error(source: job.source, repo: job.repo.name, destination: job.destination) {
+            sourceAccess.close()
             jobs[index].state = queueControl.finish(job.id, exitStatus: -1) ?? .failed
             jobs[index].message = problem; persist(); return
         }
@@ -296,6 +338,7 @@ final class AppModel {
         for pattern in job.excludes { args += ["--exclude", pattern] }
         Task { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) }
         Task {
+            defer { sourceAccess.close() }
             var status: Int32 = -1
             do {
                 status = try await command.run(executable: AppPaths.python, arguments: args, token: token) { line in
@@ -351,8 +394,11 @@ final class AppModel {
         runNext()
     }
     func installRuntime() async {
+        #if STORE_BUILD
+        error = "Upload tools are included with Face Hugger. If they are missing, reinstall the app from the App Store."
+        #else
         guard !installing, activeJob == nil else { return }
-        guard let requirements = Bundle.main.url(forResource: "requirements", withExtension: "txt") else { error = "The app is missing its upload tool requirements."; return }
+        guard let requirements = Bundle.main.url(forResource: "runtime-requirements", withExtension: "txt") else { error = "The app is missing its upload tool requirements."; return }
         installing = true; setupLog = "Setting up upload tools…"; defer { installing = false }
         do {
             setupLog += "\nPreparing setup tools; downloading from Astral if needed…"
@@ -360,14 +406,15 @@ final class AppModel {
             runtimeReady = false
             if FileManager.default.fileExists(atPath: AppPaths.runtimeMarker.path) { try FileManager.default.removeItem(at: AppPaths.runtimeMarker) }
             try FileManager.default.createDirectory(at: AppPaths.support, withIntermediateDirectories: true)
-            for args in [["venv", "--allow-existing", "--python", "3.12", AppPaths.support.appendingPathComponent("runtime").path], ["pip", "install", "--python", AppPaths.python, "-r", requirements.path]] {
-                let result = try await CommandProcess().run(executable: uv, arguments: args, token: nil) { [weak self] line in
+            for args in RuntimePolicy.setupCommands(support: AppPaths.support, requirements: requirements) {
+                let result = try await CommandProcess().run(executable: uv, arguments: args, token: nil, environmentOverrides: RuntimePolicy.setupEnvironment(support: AppPaths.support)) { [weak self] line in
                     Task { @MainActor in self?.setupLog = String(((self?.setupLog ?? "") + "\n" + line).suffix(12_000)) }
                 }
                 guard result == 0 else { throw NSError(domain: "Setup", code: Int(result), userInfo: [NSLocalizedDescriptionKey: "Upload tool setup failed. See the setup log."]) }
             }
-            try Data("huggingface_hub==2.0.0".utf8).write(to: AppPaths.runtimeMarker, options: .atomic)
+            try Data("python=\(RuntimePolicy.pythonVersion);locked-runtime-v3".utf8).write(to: AppPaths.runtimeMarker, options: .atomic)
             runtimeReady = true; setupLog += "\nUpload tools are ready."
         } catch { self.error = error.localizedDescription }
+        #endif
     }
 }

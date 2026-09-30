@@ -1,0 +1,15 @@
+{
+  "repoId": "zakkeown/face-hugger-app-review-89503494",
+  "repoType": "dataset",
+  "private": true,
+  "purpose": "Dedicated App Review upload access",
+  "retainUntil": "App Review completes; then revoke restricted token and delete repository",
+  "tokenCreated": true,
+  "tokenStoredInRepository": false,
+  "scopeRequired": "Read and write contents of this repository only",
+  "appReviewContactLocalFile": ".build/review-contact.json",
+  "tokenName": "Face Hugger App Review",
+  "tokenStorage": "App Store Connect private review credentials only",
+  "reviewContactSaved": true,
+  "scopeActual": "Selected dataset read/write; HF also requires gated-request view and allows public-repo reading. No global private/org scopes."
+}

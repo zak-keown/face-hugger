@@ -5,6 +5,8 @@ import AppKit
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let masterURL = root.appendingPathComponent("Resources/Artwork/face-hugger-master.png")
 guard let master = NSImage(contentsOf: masterURL) else { fatalError("Missing master artwork") }
+let iconURL = root.appendingPathComponent("Resources/Artwork/face-hugger-icon-v2.png")
+guard let iconMaster = NSImage(contentsOf: iconURL) else { fatalError("Missing icon artwork") }
 func color(_ value: UInt32) -> NSColor {
     NSColor(srgbRed: CGFloat((value >> 16) & 255) / 255, green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255, alpha: 1)
 }
@@ -17,9 +19,11 @@ func render(size: Int, icon: Bool, path: String) throws {
     if icon {
         let tile = NSBezierPath(roundedRect:NSRect(x:64,y:64,width:896,height:896),xRadius:190,yRadius:190)
         let shadow = NSShadow(); shadow.shadowColor = NSColor.black.withAlphaComponent(0.17); shadow.shadowBlurRadius = 16; shadow.shadowOffset = NSSize(width:0,height:-8); shadow.set()
-        color(0xF8FAFB).setFill(); tile.fill(); NSShadow().set()
-        NSGradient(starting:color(0xEBEFF2),ending:color(0xFFFFFF))!.draw(in:tile,angle:90)
-        master.draw(in:NSRect(x:66,y:76,width:892,height:892),from:.zero,operation:.sourceOver,fraction:1)
+        color(0x123858).setFill(); tile.fill(); NSShadow().set()
+        NSGraphicsContext.saveGraphicsState()
+        tile.addClip()
+        iconMaster.draw(in:NSRect(x:64,y:64,width:896,height:896),from:.zero,operation:.sourceOver,fraction:1)
+        NSGraphicsContext.restoreGraphicsState()
     } else {
         master.draw(in:NSRect(x:0,y:0,width:1024,height:1024),from:.zero,operation:.sourceOver,fraction:1)
     }

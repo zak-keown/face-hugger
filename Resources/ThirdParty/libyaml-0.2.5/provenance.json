@@ -1,0 +1,34 @@
+{
+  "package": "libyaml",
+  "version": "0.2.5",
+  "upstreamTag": "0.2.5",
+  "upstreamCommit": "2c891fc7a770e8ba2fec34fc6b545c672beb37e6",
+  "sources": [
+    {
+      "url": "https://github.com/yaml/libyaml/blob/2c891fc7a770e8ba2fec34fc6b545c672beb37e6/License",
+      "gitBlobSHA": "3d82c281ee8ceb45368153139f5935bd8d39c816",
+      "sha256": "c40112449f254b9753045925248313e9270efa36d226b22d82d4cc6c43c57f29",
+      "bytes": 1101
+    },
+    {
+      "url": "https://github.com/yaml/pyyaml/blob/49790e73684bebad1df05ef8d828fa12f685bffb/packaging/build/libyaml.sh",
+      "gitBlobSHA": "74957cfb45f4d9bfd48785c0987cf5ec79a5059e",
+      "sha256": "8ca31fdc0d246ddc2fd050bdf15d385844d723b9bd4363d56ee89ef4af5fa118",
+      "bytes": 1208
+    },
+    {
+      "url": "https://github.com/yaml/pyyaml/blob/49790e73684bebad1df05ef8d828fa12f685bffb/.github/workflows/ci.yaml",
+      "gitBlobSHA": "06c033e634f04f6364e40d34fc9e229468b1ce9b",
+      "sha256": "5004399ff14a6683eb02e45882fc3ffc5e4d6b8bb78f5496a26269fe67dd6ea8",
+      "bytes": 24890
+    }
+  ],
+  "evidence": {
+    "bundledPyYAML": "6.0.3",
+    "arm64RuntimeGetVersionString": "0.2.5",
+    "x86_64BinaryVersionString": "0.2.5",
+    "x86_64RuntimeExecuted": false,
+    "linkage": "Both Mach-O extension load-command inspections show only /usr/lib/libSystem.B.dylib; release recipe builds libyaml statically.",
+    "buildRecipe": "Exact PyYAML6.0.3 release workflow defaults LIBYAML_REPO=https://github.com/yaml/libyaml and LIBYAML_REF=0.2.5; packaged binary reports matching version. This is source-recipe provenance, not a reproducible binary-build attestation."
+  }
+}

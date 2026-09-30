@@ -5,11 +5,13 @@ public struct SavedPairing: Codable, Identifiable, Equatable, Sendable {
     public var id: UUID
     public var name: String
     public var source: String
+    public var sourceBookmark: Data?
     public var repo: HubRepo
     public var destination: String
     public var includes: [String]
     public var excludes: [String]
-    public init(name: String, source: String, repo: HubRepo, destination: String, includes: [String], excludes: [String]) {
+    public init(name: String, source: String, repo: HubRepo, destination: String, includes: [String], excludes: [String], sourceBookmark: Data? = nil) {
+        self.sourceBookmark = sourceBookmark
         id = UUID(); self.name = name; self.source = source; self.repo = repo
         self.destination = destination; self.includes = includes; self.excludes = excludes
     }

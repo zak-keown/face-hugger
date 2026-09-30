@@ -31,7 +31,11 @@ xcodebuild -project FaceHugger.xcodeproj -scheme FaceHugger \
 open ".build/xcode/Build/Products/Debug/Face Hugger.app"
 ```
 
-In **Settings**, choose **Set up upload tools**. This installs Python 3.12 and the pinned Hugging Face runtime into an isolated environment under `~/Library/Application Support/Face Hugger/`. Setup needs an internet connection. It uses an existing `uv` when available, otherwise downloads pinned uv 0.12.18 from its official GitHub release and verifies its SHA-256 before execution. No Homebrew or terminal setup is required in the packaged app.
+In the direct-download edition's **Settings**, choose **Set up upload tools**. This installs Python 3.12.14 and the checksum-locked Hugging Face dependencies under `~/Library/Application Support/Face Hugger/`, with explicit `python/`, `setup-cache/`, and `runtime-v3/` directories. Setup downloads pinned uv 0.12.18 from its official GitHub release and verifies its SHA-256 before execution. No Homebrew or terminal setup is required. The older `runtime/` directory is left intact during migration; the updated app asks for setup once to install the new locked runtime. Hugging Face's own login/cache locations remain compatible with an existing CLI installation.
+
+The App Store build under development embeds its upload runtime and does not download executable tools at first launch. See [Store preparation](docs/store-build.md) for its current validation limits.
+
+[Privacy policy](docs/privacy.md) · [Support](https://github.com/zak-keown/face-hugger/issues)
 
 Connect with a Hugging Face token that can write to your destination repository. Leaving the token blank uses the existing CLI login, if available. Removing the saved app account does not log you out of the separate HF CLI.
 

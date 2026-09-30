@@ -2,7 +2,8 @@
 """Face Hugger's JSON-lines bridge. Tokens arrive through HF_TOKEN, never argv.
 
 Every output line is a JSON object with `event`. Commands other than upload emit
-one `result` with `data`; uploads emit `status`, `log`, recognized `progress`
+one `result` with `data` (repos/tree --stream emit `item` frames and a
+terminal `result` with `streamed=true,count`); uploads emit `status`, `log`, recognized `progress`
 counts, and finally `complete`.
 Errors emit `error` and exit nonzero. SIGINT/SIGTERM stop the entire CLI process
 session before the bridge exits. Rerunning an upload lets HF deduplicate content.
@@ -159,7 +160,7 @@ def upload(args, api) -> None:
                 emit("status", message="Checking remote file and folder conflicts…")
                 validate_upload_paths(args, api, index)
     emit("status", message="Starting HF upload. Preparing, transferring and committing may overlap.")
-    environment = dict(os.environ, PYTHONUNBUFFERED="1", NO_COLOR="1", HF_HUB_DISABLE_TELEMETRY="1")
+    environment = dict(os.environ, PYTHONUNBUFFERED="1", NO_COLOR="1", HF_HUB_DISABLE_TELEMETRY="1", HF_HUB_DISABLE_UPDATE_CHECK="1")
     try:
         _SPAWNING = True
         try:
@@ -348,10 +349,20 @@ def execute(args, api) -> None:
                 "organizations": [org["name"] for org in user.get("orgs", [])]}
     elif args.command == "repos":
         data = []
+        count = 0
         for kind, listing in (("model", api.list_models), ("dataset", api.list_datasets)):
             for repo in listing(author=args.owner):
-                data.append({"id": repo.id, "type": kind, "private": bool(repo.private),
-                             "url": repo_url(repo.id, kind)})
+                item = {"id": repo.id, "type": kind, "private": bool(repo.private), "url": repo_url(repo.id, kind)}
+                if args.stream:
+                    if count >= 100000:
+                        raise ValueError("The repository listing exceeds 100000 entries. No partial listing was accepted.")
+                    emit("item", data=item)
+                    count += 1
+                else:
+                    data.append(item)
+        if args.stream:
+            emit("result", streamed=True, count=count)
+            return
         data.sort(key=lambda item: item["id"].lower())
     elif args.command == "compare":
         data = compare_paths(args, api)
@@ -360,20 +371,31 @@ def execute(args, api) -> None:
         data = {"id": repo.id, "type": args.type, "private": bool(repo.private), "url": repo_url(repo.id, args.type)}
     elif args.command == "tree":
         data = []
+        count = 0
         path = remote_path(args.path)
         try:
             for entry in api.list_repo_tree(repo_id=args.repo, repo_type=args.type,
                                             path_in_repo=path or None, recursive=False):
                 directory = type(entry).__name__ == "RepoFolder"
-                data.append({"path": entry.path, "type": "directory" if directory else "file",
-                             "size": 0 if directory else (getattr(entry, "size", 0) or 0)})
+                item = {"path": entry.path, "type": "directory" if directory else "file",
+                        "size": 0 if directory else (getattr(entry, "size", 0) or 0)}
+                if args.stream:
+                    if count >= 100000:
+                        raise ValueError("This folder exceeds 100000 entries. No partial listing was accepted. Browse a smaller subfolder.")
+                    emit("item", data=item)
+                    count += 1
+                else:
+                    data.append(item)
         except Exception as error:
-            if not args.allow_missing_path or not path:
+            if not args.allow_missing_path or not path or count:
                 raise
             from huggingface_hub.errors import EntryNotFoundError
             if not isinstance(error, EntryNotFoundError):
                 raise
             data = []
+        if args.stream:
+            emit("result", streamed=True, count=count)
+            return
         data.sort(key=lambda item: (item["type"] != "directory", item["path"].lower()))
     elif args.command == "create":
         url = api.create_repo(repo_id=args.repo, repo_type=args.type, private=args.private == "true", exist_ok=False)
@@ -401,6 +423,7 @@ def parser() -> argparse.ArgumentParser:
     scan.add_argument("--exclude", action="append", default=[])
     repos = commands.add_parser("repos")
     repos.add_argument("--owner", required=True)
+    repos.add_argument("--stream", action="store_true")
     for name in ("compare", "info", "tree", "create", "delete", "upload"):
         command = commands.add_parser(name)
         command.add_argument("--repo", required=True)
@@ -413,6 +436,7 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument("--file", action="append", default=[])
         if name == "tree":
             command.add_argument("--allow-missing-path", action="store_true")
+            command.add_argument("--stream", action="store_true")
         if name == "create":
             command.add_argument("--private", choices=("true", "false"), required=True)
         if name == "upload":

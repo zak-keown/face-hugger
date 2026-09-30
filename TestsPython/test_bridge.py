@@ -262,6 +262,39 @@ sys.exit(bridge.main(['upload', '--repo', 'alice/model', '--source', '/tmp']))
             bridge.emit("error", message="\x1b[31man unusual secret hf_abcdefghijk\x1b[0m")
         self.assertEqual(self.events()[0]["message"], "[redacted] [redacted]")
 
+    def test_large_directory_streams_small_frames_with_terminal_count(self):
+        api = Mock()
+        api.list_repo_tree.return_value = (SimpleNamespace(path=f"folder/ü long filename {i}.bin", size=i) for i in range(4000))
+        bridge.execute(bridge.parser().parse_args(["tree", "--repo", "alice/model", "--stream"]), api)
+        output = self.output.getvalue()
+        events = self.events()
+        self.assertGreater(len(output.encode()), 128000)
+        self.assertLess(max(len(line.encode()) for line in output.splitlines()), 128000)
+        self.assertEqual(events[-1], {"event": "result", "streamed": True, "count": 4000})
+        self.assertEqual(events[3999]['data']['path'], 'folder/ü long filename 3999.bin')
+
+    def test_streaming_listing_failure_never_emits_final_result(self):
+        def failing():
+            yield SimpleNamespace(path="first.bin", size=3)
+            raise ConnectionError("connection dropped")
+        api = Mock()
+        api.list_repo_tree.return_value = failing()
+        with self.assertRaises(ConnectionError):
+            bridge.execute(bridge.parser().parse_args(["tree", "--repo", "alice/model", "--stream"]), api)
+        self.assertEqual([event['event'] for event in self.events()], ['item'])
+
+    def test_streaming_repo_listing_and_empty_tree_have_explicit_completion(self):
+        api = Mock()
+        api.list_models.return_value = iter([SimpleNamespace(id="alice/model", private=True)])
+        api.list_datasets.return_value = iter([SimpleNamespace(id="alice/data", private=False)])
+        bridge.execute(bridge.parser().parse_args(["repos", "--owner", "alice", "--stream"]), api)
+        self.assertEqual(self.events()[-1], {"event": "result", "streamed": True, "count": 2})
+        self.assertEqual([event['data']['type'] for event in self.events()[:-1]], ['model', 'dataset'])
+        self.output.truncate(0); self.output.seek(0)
+        api.list_repo_tree.return_value = []
+        bridge.execute(bridge.parser().parse_args(["tree", "--repo", "alice/model", "--stream"]), api)
+        self.assertEqual(self.events(), [{"event": "result", "streamed": True, "count": 0}])
+
     def test_repo_info_preserves_actual_visibility_and_type(self):
         api = Mock()
         api.repo_info.return_value = SimpleNamespace(id="alice/data", private=True)

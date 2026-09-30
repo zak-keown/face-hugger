@@ -61,9 +61,13 @@ struct FilterEditor: View {
             Text("File filters").font(.system(size: 16, weight: .semibold))
             Text("Include").font(.system(size: 12)).foregroundStyle(.secondary)
             TextField("All files", text: $includes, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder)
+                .accessibilityLabel("Include patterns")
+                .accessibilityHint("One glob pattern per line. Leave blank to include all files.")
             Text("Exclude").font(.system(size: 12)).foregroundStyle(.secondary)
             TextField("No additional exclusions", text: $excludes, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder)
-            Text("One glob per line. For example: *.safetensors or **/logs/**. Git metadata and the HF upload cache are always ignored.").font(.system(size: 12)).foregroundStyle(.secondary)
+                .accessibilityLabel("Exclude patterns")
+                .accessibilityHint("One glob pattern per line. Matching files are excluded from the upload.")
+            Text(verbatim: "One glob per line. For example: *.safetensors or **/logs/**. Git metadata and the HF upload cache are always ignored.").font(.system(size: 12)).foregroundStyle(.secondary)
             HStack {
                 Button("Cancel") { dismiss() }
                 Spacer()

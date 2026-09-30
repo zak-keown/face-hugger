@@ -1,0 +1,32 @@
+{
+  "status": "draft-build-uploaded-and-attached",
+  "bundleId": "dev.zakkeown.FaceHugger",
+  "registeredBundleIdResource": "3FB2A76GB9",
+  "requestedPlatform": "MAC_OS",
+  "registeredPlatformReturnedByApple": "UNIVERSAL",
+  "primaryLocale": "en-US",
+  "name": "Face Hugger",
+  "sku": "FACEHUGGER",
+  "initialVersion": "1.0",
+  "releaseType": "MANUAL",
+  "suggestedPrimaryCategory": "DEVELOPER_TOOLS",
+  "appId": "6817866865",
+  "versionId": "6302c414-5900-40dd-bb0d-2b886d65496b",
+  "notSubmitted": true,
+  "unresolved": [
+    "Final Store screenshots",
+    "Encryption/export-compliance determination",
+    "Final native dependency license-obligation review",
+    "Intel runtime verification"
+  ],
+  "validationReport": "AppStore/validation.json",
+  "price": "Free",
+  "availability": "All current and future App Store territories",
+  "primaryCategory": "DEVELOPER_TOOLS",
+  "ageRatingMinimum": "13+",
+  "contentRights": "USES_THIRD_PARTY_CONTENT",
+  "privacyPublished": true,
+  "reviewAccessConfigured": true,
+  "storePackage": "dist/store/FaceHugger-1.0-2.pkg",
+  "buildId": "308a707f-72a8-4801-9dcc-7cb5b3c530fd"
+}

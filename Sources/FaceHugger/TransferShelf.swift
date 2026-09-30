@@ -20,8 +20,13 @@ struct TransferShelf: View {
         model.jobs.filter { showHistory ? $0.state == .completed : $0.state != .completed }
     }
     private func recovery(_ job: UploadJob) -> UploadRecoveryHint {
+        guard job.state != .running && job.state != .completed else { return .other }
+        let access: FolderAccess
+        do { access = try FolderAccess.restore(path: job.source, bookmark: job.sourceBookmark) }
+        catch { return .missingSource }
+        defer { access.close() }
         var isDirectory: ObjCBool = false
-        let exists = FileManager.default.fileExists(atPath: job.source, isDirectory: &isDirectory) && isDirectory.boolValue
+        let exists = FileManager.default.fileExists(atPath: access.url.path, isDirectory: &isDirectory) && isDirectory.boolValue
         return UploadRecoveryHint.classify(message: job.message, sourceExists: exists)
     }
 
@@ -107,17 +112,18 @@ struct TransferShelf: View {
 
     @ViewBuilder
     private func activity(_ job: UploadJob) -> some View {
+        let hint = recovery(job)
         if job.state == .completed {
             VStack(alignment: .leading, spacing: 9) {
                 Label("Files committed to Hugging Face", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(Color(red: 0.545, green: 0.835, blue: 0.639))
                 Text(job.message).foregroundStyle(muted).textSelection(.enabled)
             }
-        } else if job.state == .failed || (job.state != .running && recovery(job) == .missingSource) {
+        } else if job.state == .failed || (job.state != .running && hint == .missingSource) {
             VStack(alignment: .leading, spacing: 9) {
                 Text(job.message).foregroundStyle(.white).textSelection(.enabled)
                     .lineLimit(3).help(job.message)
-                Text(recovery(job).guidance).foregroundStyle(muted)
+                Text(hint.guidance).foregroundStyle(muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         } else if let progress = model.progress[job.id], job.state != .interrupted {
@@ -165,22 +171,23 @@ struct TransferShelf: View {
     }
 
     private func actions(_ job: UploadJob) -> some View {
-        VStack(alignment: .trailing, spacing: 12) {
+        let hint = recovery(job)
+        return VStack(alignment: .trailing, spacing: 12) {
             if job.state == .running {
                 Button("Stop upload", systemImage: "stop.fill") { model.stop() }
                     .buttonStyle(.borderedProminent).tint(gold).foregroundStyle(slate)
             } else if job.state != .completed {
-                if recovery(job) == .missingSource {
+                if hint == .missingSource {
                     Button("Locate folder…", systemImage: "folder") { model.locateSource(for: job.id) }
                         .buttonStyle(.borderedProminent).tint(gold).foregroundStyle(slate)
                         .help("Locate the original source folder; upload will not start automatically")
-                } else if job.state == .failed && recovery(job) == .authentication {
+                } else if job.state == .failed && hint == .authentication {
                     Button("Account settings…", systemImage: "person.crop.circle") { model.showSettings = true }
                         .buttonStyle(.plain).foregroundStyle(gold)
                 }
                 Button(resumeLabel(job), systemImage: "play.fill") { model.resume(job.id) }
                     .buttonStyle(.borderedProminent).tint(gold).foregroundStyle(slate)
-                    .disabled(recovery(job) == .missingSource)
+                    .disabled(hint == .missingSource)
                     .help(model.activeJob == nil ? "Start this upload" : "Run this upload after the active transfer")
             }
             Button("Open on Hugging Face", systemImage: "arrow.up.right.square") { NSWorkspace.shared.open(job.repo.url) }

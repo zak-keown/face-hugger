@@ -4,8 +4,24 @@ import Security
 
 enum AppPaths {
     static let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Face Hugger")
-    static let python = support.appendingPathComponent("runtime/bin/python3").path
-    static let runtimeMarker = support.appendingPathComponent("runtime-ready-v2")
+    #if STORE_BUILD
+    static let isStoreEdition = true
+    static var python: String {
+        #if arch(arm64)
+        let architecture = "arm64"
+        #else
+        let architecture = "x86_64"
+        #endif
+        return Bundle.main.resourceURL!.appendingPathComponent("UploadRuntime.bundle/Contents/Resources/\(architecture)/python/bin/python3.12").path
+    }
+    #else
+    static let isStoreEdition = false
+    static let python = support.appendingPathComponent("runtime-v3/bin/python3").path
+    #endif
+    static let runtimeMarker = support.appendingPathComponent("runtime-ready-v3")
+    static var runtimeReady: Bool {
+        FileManager.default.isExecutableFile(atPath: python) && (isStoreEdition || FileManager.default.fileExists(atPath: runtimeMarker.path))
+    }
     static var bridge: String { Bundle.main.url(forResource: "bridge", withExtension: "py")!.path }
 }
 
@@ -19,7 +35,11 @@ enum CredentialStore {
     }
     static func save(_ token: String) throws {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: "huggingface"]
-        if token.isEmpty { SecItemDelete(query as CFDictionary); return }
+        if token.isEmpty {
+            let status = SecItemDelete(query as CFDictionary)
+            guard status == errSecSuccess || status == errSecItemNotFound else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status)) }
+            return
+        }
         let updated = SecItemUpdate(query as CFDictionary, [kSecValueData as String: Data(token.utf8)] as CFDictionary)
         if updated == errSecSuccess { return }
         guard updated == errSecItemNotFound else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(updated)) }
@@ -41,14 +61,22 @@ final class CommandProcess: @unchecked Sendable {
         if process.isRunning { process.terminate() }
         lock.unlock()
     }
-    func run(executable: String, arguments: [String], token: String?, onLine: @escaping @Sendable (String) -> Void) async throws -> Int32 {
+    func run(executable: String, arguments: [String], token: String?, environmentOverrides: [String: String] = [:], onLine: @escaping @Sendable (String) -> Void) async throws -> Int32 {
         try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .utility).async { [self] in
                 let pipe = Pipe()
                 process.executableURL = URL(fileURLWithPath: executable)
                 process.arguments = arguments
+                #if STORE_BUILD
+                var env = ["PATH": "/usr/bin:/bin", "HOME": NSHomeDirectory(),
+                           "TMPDIR": NSTemporaryDirectory(), "HF_HOME": AppPaths.support.appendingPathComponent("huggingface").path,
+                           "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1"]
+                #else
                 var env = ProcessInfo.processInfo.environment
+                #endif
+                env.merge(environmentOverrides) { _, supplied in supplied }
                 env["PYTHONUNBUFFERED"] = "1"; env["HF_HUB_DISABLE_TELEMETRY"] = "1"
+                env["HF_HUB_DISABLE_UPDATE_CHECK"] = "1"
                 if let token, !token.isEmpty { env["HF_TOKEN"] = token }
                 process.environment = env
                 process.standardOutput = pipe; process.standardError = pipe
@@ -58,21 +86,28 @@ final class CommandProcess: @unchecked Sendable {
                     if cancelled { lock.unlock(); continuation.resume(returning: 143); return }
                     do { try process.run() } catch { lock.unlock(); throw error }
                     lock.unlock()
-                    var buffer = Data()
+                    var framer = JSONLineFramer(maxLineBytes: maxLineBytes)
+                    var framingError: Error?
                     while true {
                         let data = pipe.fileHandleForReading.availableData
                         if data.isEmpty { break }
-                        buffer.append(data)
-                        while let index = buffer.firstIndex(of: 10) {
-                            let line = String(decoding: buffer[..<index], as: UTF8.self)
-                            buffer.removeSubrange(...index)
-                            onLine(Self.redact(line, token: token))
+                        // Continue draining after cancellation so a child cannot block on a full pipe.
+                        guard framingError == nil else { continue }
+                        do {
+                            for line in try framer.append(data) {
+                                onLine(Self.redact(String(decoding: line, as: UTF8.self), token: token))
+                            }
+                        } catch {
+                            framingError = error
+                            stop()
                         }
-                        if buffer.count > maxLineBytes { onLine(Self.redact(String(decoding: buffer, as: UTF8.self), token: token)); buffer.removeAll() }
                     }
-                    if !buffer.isEmpty { onLine(Self.redact(String(decoding: buffer, as: UTF8.self), token: token)) }
+                    if let line = framer.finish(), framingError == nil {
+                        onLine(Self.redact(String(decoding: line, as: UTF8.self), token: token))
+                    }
                     process.waitUntilExit()
-                    continuation.resume(returning: process.terminationStatus)
+                    if let framingError { continuation.resume(throwing: framingError) }
+                    else { continuation.resume(returning: process.terminationStatus) }
                 } catch { continuation.resume(throwing: error) }
             }
         }
@@ -103,28 +138,31 @@ struct RemoteEntry: Decodable, Identifiable, Hashable, Sendable {
     var name: String { path.split(separator: "/").last.map(String.init) ?? path }
 }
 
-actor CommandOutput {
-    var lines: [String] = []
-    func append(_ line: String) { lines.append(line) }
-    func result() -> [String] { lines }
+final class HubResponseCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var response = HubResponseAccumulator()
+    private var failure: Error?
+    func append(_ line: String) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        guard failure == nil else { return false }
+        do { try response.append(line); return true }
+        catch { failure = error; return false }
+    }
+    func result(status: Int32) throws -> Data {
+        lock.lock(); defer { lock.unlock() }
+        if let failure { throw failure }
+        return try response.result(exitStatus: status)
+    }
 }
 
 enum HubService {
     static func request<T: Decodable & Sendable>(_ args: [String], token: String?, process: CommandProcess? = nil) async throws -> T {
-        let output = CommandOutput()
-        // Serialize line collection on a dedicated queue so the final result cannot overtake output.
-        let collector = LineCollector()
-        let status = try await (process ?? CommandProcess()).run(executable: AppPaths.python, arguments: [AppPaths.bridge] + args, token: token) { collector.append($0) }
-        for line in collector.lines() { await output.append(line) }
-        var failure: String?
-        for line in await output.result() {
-            guard let data = line.data(using: .utf8), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
-            if object["event"] as? String == "error" { failure = object["message"] as? String }
-            if status == 0, object["event"] as? String == "result", let result = object["data"] {
-                return try JSONDecoder().decode(T.self, from: JSONSerialization.data(withJSONObject: result))
-            }
+        let collector = HubResponseCollector()
+        let command = process ?? CommandProcess()
+        let status = try await command.run(executable: AppPaths.python, arguments: [AppPaths.bridge] + args, token: token) { line in
+            if !collector.append(line) { command.stop() }
         }
-        throw NSError(domain: "FaceHugger", code: Int(status), userInfo: [NSLocalizedDescriptionKey: failure ?? "Hugging Face did not return a result. Check your connection and upload tools."])
+        return try JSONDecoder().decode(T.self, from: collector.result(status: status))
     }
 }
 
