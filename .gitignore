@@ -1,0 +1,11 @@
+.build/
+.runtime/
+.venv/
+.DS_Store
+*.xcuserstate
+xcuserdata/
+.superdesign/tmp/
+__pycache__/
+*.pyc
+dist/
+.env

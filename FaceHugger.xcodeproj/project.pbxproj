@@ -1,0 +1,362 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0567DC6C5094F13912B74184 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA1D44DC5B7FFD67051296 /* Models.swift */; };
+		33D0E52753A98C9585966907 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2050DFC39D4E98D1893B50F /* Services.swift */; };
+		386B6880ECC2143F963A85DF /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B49DCA59F65A1B0D8E253451 /* Sheets.swift */; };
+		44C49A71382B06A9FC2A17DF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 551CCA4B4D77240C93F7DE7F /* Assets.xcassets */; };
+		5D3403C6423FB92F0D77A13F /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4429FC49D860F2CEB1BA756 /* AppModel.swift */; };
+		6245C0905AE4F4A28AEEFFE2 /* RepoBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */; };
+		77C0E3775BF2F6CB2CE83C5B /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04D4F232BBF187F37D6ED3F /* MainView.swift */; };
+		91C01F0DCFDFEE17A98D08EB /* bridge.py in Resources */ = {isa = PBXBuildFile; fileRef = FB41A3FCE9550CCDF44C9C85 /* bridge.py */; };
+		AA80942DE40DA75EB0CAAE29 /* FaceHuggerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */; };
+		CFB98D4306B669B91DE3E6AA /* requirements.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3D18595E3830863CD781BAEA /* requirements.txt */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3D18595E3830863CD781BAEA /* requirements.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = requirements.txt; sourceTree = "<group>"; };
+		551CCA4B4D77240C93F7DE7F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceHuggerApp.swift; sourceTree = "<group>"; };
+		A2050DFC39D4E98D1893B50F /* Services.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services.swift; sourceTree = "<group>"; };
+		A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoBrowser.swift; sourceTree = "<group>"; };
+		A8BEBDC316A4528BCF27BAA7 /* FaceHugger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FaceHugger.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B4429FC49D860F2CEB1BA756 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		B49DCA59F65A1B0D8E253451 /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
+		CEEA1D44DC5B7FFD67051296 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		E04D4F232BBF187F37D6ED3F /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		FB41A3FCE9550CCDF44C9C85 /* bridge.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = bridge.py; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0748F726010FCDE722E1ECD2 /* FaceHuggerCore */ = {
+			isa = PBXGroup;
+			children = (
+				CEEA1D44DC5B7FFD67051296 /* Models.swift */,
+			);
+			name = FaceHuggerCore;
+			path = Sources/FaceHuggerCore;
+			sourceTree = "<group>";
+		};
+		3402B590C628D8B2B46F0719 /* FaceHugger */ = {
+			isa = PBXGroup;
+			children = (
+				B4429FC49D860F2CEB1BA756 /* AppModel.swift */,
+				5B08B1B834B330777FB43249 /* FaceHuggerApp.swift */,
+				E04D4F232BBF187F37D6ED3F /* MainView.swift */,
+				A5EDCD000E7270D10DD2876E /* RepoBrowser.swift */,
+				A2050DFC39D4E98D1893B50F /* Services.swift */,
+				B49DCA59F65A1B0D8E253451 /* Sheets.swift */,
+			);
+			name = FaceHugger;
+			path = Sources/FaceHugger;
+			sourceTree = "<group>";
+		};
+		B2854C6E4907124338384E71 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				551CCA4B4D77240C93F7DE7F /* Assets.xcassets */,
+				FB41A3FCE9550CCDF44C9C85 /* bridge.py */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		BE7A5E12B42CCEB621EFBA83 = {
+			isa = PBXGroup;
+			children = (
+				3D18595E3830863CD781BAEA /* requirements.txt */,
+				3402B590C628D8B2B46F0719 /* FaceHugger */,
+				0748F726010FCDE722E1ECD2 /* FaceHuggerCore */,
+				B2854C6E4907124338384E71 /* Resources */,
+				F4E51DC4CE0088B5DDCFA51F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F4E51DC4CE0088B5DDCFA51F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8BEBDC316A4528BCF27BAA7 /* FaceHugger.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		242DAD0607551961787B8CAA /* FaceHugger */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2DFC7276EBF105C56C3496CB /* Build configuration list for PBXNativeTarget "FaceHugger" */;
+			buildPhases = (
+				01F693B34EF94008F1ABD324 /* Sources */,
+				CAA869C1AAE56EA4E9F10D60 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FaceHugger;
+			packageProductDependencies = (
+			);
+			productName = FaceHugger;
+			productReference = A8BEBDC316A4528BCF27BAA7 /* FaceHugger.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D8B66840BAF3A77DBA8767A2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					242DAD0607551961787B8CAA = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = E9ADD742AC27FB27EBF392DF /* Build configuration list for PBXProject "FaceHugger" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BE7A5E12B42CCEB621EFBA83;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F4E51DC4CE0088B5DDCFA51F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				242DAD0607551961787B8CAA /* FaceHugger */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CAA869C1AAE56EA4E9F10D60 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				44C49A71382B06A9FC2A17DF /* Assets.xcassets in Resources */,
+				91C01F0DCFDFEE17A98D08EB /* bridge.py in Resources */,
+				CFB98D4306B669B91DE3E6AA /* requirements.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		01F693B34EF94008F1ABD324 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5D3403C6423FB92F0D77A13F /* AppModel.swift in Sources */,
+				AA80942DE40DA75EB0CAAE29 /* FaceHuggerApp.swift in Sources */,
+				77C0E3775BF2F6CB2CE83C5B /* MainView.swift in Sources */,
+				0567DC6C5094F13912B74184 /* Models.swift in Sources */,
+				6245C0905AE4F4A28AEEFFE2 /* RepoBrowser.swift in Sources */,
+				33D0E52753A98C9585966907 /* Services.swift in Sources */,
+				386B6880ECC2143F963A85DF /* Sheets.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		15089BEC77F28ECBF928BD19 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		6123740D3BC17FC940FD3226 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Face Hugger";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.zakkeown.FaceHugger;
+				PRODUCT_NAME = "Face Hugger";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		9B0710C4BFC7FDD643874391 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		9C8AA86D0D9CC580AD4F6E22 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Face Hugger";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.zakkeown.FaceHugger;
+				PRODUCT_NAME = "Face Hugger";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2DFC7276EBF105C56C3496CB /* Build configuration list for PBXNativeTarget "FaceHugger" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9C8AA86D0D9CC580AD4F6E22 /* Debug */,
+				6123740D3BC17FC940FD3226 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E9ADD742AC27FB27EBF392DF /* Build configuration list for PBXProject "FaceHugger" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				15089BEC77F28ECBF928BD19 /* Debug */,
+				9B0710C4BFC7FDD643874391 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D8B66840BAF3A77DBA8767A2 /* Project object */;
+}

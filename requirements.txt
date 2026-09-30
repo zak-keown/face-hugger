@@ -1,0 +1,2 @@
+# HF 2.0 uses the resumable Xet-backed `hf upload` pipeline.
+huggingface_hub==2.0.0
