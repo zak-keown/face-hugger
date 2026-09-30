@@ -52,6 +52,32 @@
         }
       },
       "updatedAt": "2026-09-30T16:02:43.704723+00:00"
+    },
+    "dataset-card": {
+      "targetKind": "new-ui",
+      "projectId": "016e36f9-f366-4c98-836f-c9bbf5783746",
+      "activeDraftId": "bcd23393-aa88-4f3c-a6e4-9cfc39447831",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "Sources/FaceHugger/BenchTheme.swift",
+        "Sources/FaceHugger/Sheets.swift"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "065d454220cf9348a85249cbddffc3ddc57454a94070319b7cea513de914dbaf",
+        "Sources/FaceHugger/BenchTheme.swift": "1ec922f6a4eca4dbaea0fdf4f680b04be098f79e1a0fcba7eb17ea42b32e65c4",
+        "Sources/FaceHugger/Sheets.swift": "7508ec64adb04d1047605474a24cb1db9225751edc694a32402c15588cb0d3c1"
+      },
+      "referenceIds": [],
+      "components": [],
+      "drafts": {
+        "bcd23393-aa88-4f3c-a6e4-9cfc39447831": {
+          "title": "Face Hugger - Dataset Card Sheet",
+          "visualDirection": "Native split sheet with warm facts and author context rail, cool editable README surface, user-initiated on-device drafting and explicit save",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-09-30T20:23:42.022073+00:00"
     }
   }
 }

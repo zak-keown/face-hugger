@@ -6,6 +6,7 @@ struct RepoBrowser: View {
     @Bindable var model: AppModel
     let repo: HubRepo
     var chooseRepository: (() -> Void)? = nil
+    var draftDatasetCard: (() -> Void)? = nil
     @State private var selection: Data?
     @State private var search = ""
     @State private var pendingDelete: RemoteEntry?
@@ -63,6 +64,12 @@ struct RepoBrowser: View {
                 Text(model.remotePath.isEmpty ? "Repository root" : "/ " + model.remotePath)
                     .lineLimit(1).truncationMode(.middle).help(model.remotePath.isEmpty ? "Repository root" : model.remotePath)
                 Spacer(minLength: 4)
+                if repo.kind == .dataset, let draftDatasetCard {
+                    Button("Dataset card…", systemImage: "doc.text", action: draftDatasetCard)
+                        .buttonStyle(.plain)
+                        .disabled(model.draftSource.isEmpty)
+                        .help(model.draftSource.isEmpty ? "Choose a local folder to draft its dataset card" : "Draft a dataset card from this local folder")
+                }
                 if !model.remotePath.isEmpty {
                     Button { goUp() } label: { Image(systemName: "arrow.up") }
                         .buttonStyle(.plain).help("Open parent folder").accessibilityLabel("Open parent folder")

@@ -2,7 +2,7 @@
 
 Effective September 30, 2026. Face Hugger is developed by Zak Keown. For privacy or support requests, contact [zak.k.ai@outlook.com](mailto:zak.k.ai@outlook.com).
 
-This policy covers existing Python-based builds and the native backend replacement under development. Store build 3 uses the bundled Python backend; native build 4 is pending verification and release.
+This policy covers existing Python-based builds and the native backend. Store build 3 uses the bundled Python backend; native build 4 has been verified and is awaiting release. Dataset-card drafting is a subsequent development feature.
 
 ## What the app does with your information
 
@@ -19,6 +19,10 @@ An access token saved through Face Hugger is stored in macOS Keychain. Queue and
 The app attempts to redact Hugging Face tokens from displayed and saved diagnostic output. File paths, repository names, and other diagnostic details may still appear in logs. Local completion notifications can show a transfer title. macOS controls notification display and permissions.
 
 You can remove saved pairings and finished queue items in the app. Removing the saved account deletes the token saved by Face Hugger; it does not revoke the token at Hugging Face or remove a separate CLI login. To revoke a token, use your Hugging Face account settings. To remove remaining local Face Hugger records, quit the app and remove its Application Support folder after preserving anything you need. Removing source-folder upload caches can discard resumable progress.
+
+## Optional dataset-card drafting
+
+When you open the dataset-card editor, Face Hugger reads file names, sizes, and the current upload filters to summarize your selected folder. An existing local README may be read into the editor for comparison; it is not passed to the model. Dataset contents are not sampled or sent for generation. If you choose **Draft on this Mac**, your purpose statement and a bounded metadata summary are processed using Apple's on-device Foundation Models model. Face Hugger does not route this feature to a cloud model. Drafts and context notes remain in memory until you explicitly save a local Markdown file. Saving does not upload it; the normal upload action sends the card to Hugging Face only when you choose to include it.
 
 ## Setup, links, and support
 

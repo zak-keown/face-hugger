@@ -14,6 +14,7 @@ final class AppModel {
     var loading = false
     var accountBusy = false
     var error: String?
+    var datasetCard: DatasetCardWorkspace?
     var showSettings = false
     var showUpload = false
     var showCreateRepo = false
@@ -125,6 +126,12 @@ final class AppModel {
             if currentRepo == repo { await browse(repo, path: remotePath) }
         } catch { self.error = error.localizedDescription }
     }
+    func makeDatasetCardWorkspace() throws -> DatasetCardWorkspace {
+        let access = try FolderAccess.restore(path: draftSource, bookmark: draftSourceBookmark)
+        return DatasetCardWorkspace(access: access, includes: draftIncludes, excludes: draftExcludes,
+                                    destination: remotePath, repository: currentRepo?.name)
+    }
+
     func chooseFolder() {
         let panel = NSOpenPanel(); panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
         panel.prompt = "Choose folder"

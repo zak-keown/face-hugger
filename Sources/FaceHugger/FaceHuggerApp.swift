@@ -6,11 +6,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var model: AppModel?
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let model, model.activeJob != nil else { return .terminateNow }
+        guard let model else { return .terminateNow }
+        if let card = model.datasetCard, card.isDirty {
+            let alert = NSAlert()
+            alert.messageText = "Discard the unsaved dataset card and quit?"
+            alert.informativeText = "Your draft and context notes have not all been saved. Keep editing to save them first."
+            alert.addButton(withTitle: "Keep editing")
+            alert.addButton(withTitle: "Discard and quit")
+            guard alert.runModal() == .alertSecondButtonReturn else { return .terminateCancel }
+        }
+        guard model.activeJob != nil else {
+            model.datasetCard?.cancel()
+            return .terminateNow
+        }
         let alert = NSAlert(); alert.messageText = "Stop uploading and quit?"
         alert.informativeText = "You can resume this upload next time you open Face Hugger. Files already committed will remain on Hugging Face. Closing the window instead keeps your upload running."
         alert.addButton(withTitle: "Keep uploading"); alert.addButton(withTitle: "Stop and quit")
         if alert.runModal() == .alertSecondButtonReturn {
+            model.datasetCard?.cancel()
             model.stop()
             Task { @MainActor in
                 while model.activeJob != nil { try? await Task.sleep(for: .milliseconds(100)) }

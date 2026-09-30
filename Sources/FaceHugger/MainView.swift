@@ -52,6 +52,9 @@ struct MainView: View {
         }
         .sheet(isPresented: $model.showSettings) { SettingsSheet(model: model) }
         .sheet(isPresented: $model.showCreateRepo) { CreateRepoSheet(model: model) }
+        .sheet(item: $model.datasetCard) { workspace in
+            DatasetCardSheet(workspace: workspace, onSaved: { model.scanSource() })
+        }
         .sheet(isPresented: $showDestination) { DestinationSheet(model: model) }
         .alert("Face Hugger", isPresented: Binding(get: { model.error != nil && !model.showSettings && !model.showCreateRepo }, set: { if !$0 { model.error = nil } })) {
             Button("OK") { model.error = nil }
@@ -179,7 +182,10 @@ struct MainView: View {
     @ViewBuilder private var remotePane: some View {
         Group {
             if let repo = model.currentRepo {
-                RepoBrowser(model: model, repo: repo, chooseRepository: { showRepos = true })
+                RepoBrowser(model: model, repo: repo, chooseRepository: { showRepos = true }, draftDatasetCard: {
+                    do { model.datasetCard = try model.makeDatasetCardWorkspace() }
+                    catch { model.error = error.localizedDescription }
+                })
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {

@@ -14,6 +14,7 @@ Face Hugger brings a local file preview, remote repository browser, and persiste
 - Review remote path conflicts before uploading. Matching paths do not prove identical contents.
 - Queue jobs, stop transfers, and choose when to retry interrupted work.
 - Browse remote folders, create public or private repositories, and delete individual files after confirmation.
+- Draft an editable dataset card from measured folder metadata, with optional on-device Apple Intelligence and an always-available template.
 - Connect using a Hugging Face access token stored in macOS Keychain.
 - Save folder–repository pairings, keep uploads running after closing the window, optionally prevent idle sleep, and receive completion notifications.
 
@@ -33,11 +34,13 @@ open ".build/xcode/Build/Products/Debug/Face Hugger.app"
 
 Connect with a token that can write to the chosen repository. Select a local folder and destination, review filters, then start the upload. Matching remote paths may be replaced; other files remain. Source folders stay live rather than being snapshotted. The native engine checks for changes and requires a new job when a saved upload’s source changes. Stopping does not undo remote commits. Closing the window leaves the app running; quitting stops an active transfer.
 
+For dataset repositories, choose **Dataset card…** beside the remote folder controls. Add purpose, source, license, and limitations; use the template or **Draft on this Mac**. The model rewrites only your purpose into an overview; measured facts and declarations stay deterministic. Existing local README files open for editing and side-by-side comparison. Save through the native dialog, then include the card in a new upload to the repository root. Nothing is published automatically. On-device generation needs macOS 26+, an Apple Intelligence-capable Mac with its model ready, and a build made with Xcode 26+; the template works on macOS 15 and Intel. This feature is in the development build, not the already-uploaded Store build 4. The development build passed 71 Swift tests plus signed-app checks for on-device drafting, README comparison, local save, and unsaved-note protection; an actual model cancellation smoke test also passed.
+
 [Privacy policy](docs/privacy.md) · [Support](https://github.com/zak-keown/face-hugger/issues) · [Native release gate](docs/native-backend-release.md)
 
 ## Limits and verification
 
-Uploads require the app to remain running and the Mac awake. There is no scheduled upload service. Repository management is limited to models and datasets; Spaces, branches, moves, card editing, and whole-repository deletion are outside scope. Logs are bounded and session-only; queue and pairing metadata persist locally.
+Uploads require the app to remain running and the Mac awake. There is no scheduled upload service. Repository management is limited to models and datasets; Spaces, branches, moves, remote card fetching, and whole-repository deletion are outside scope. Logs are bounded and session-only; queue and pairing metadata persist locally.
 
 `Scripts/check.sh` is the repository check entry point. Some Python bridge tests and old live-test scripts remain as historical regression evidence; they are not native-engine integration tests. The production native live test is in `Scripts/NativeSmoke`; see the native release gate for its results. Tests that mutate remote repositories must use explicitly authorized disposable fixtures and verify cleanup.
 
