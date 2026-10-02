@@ -1,4 +1,21 @@
-# Store screenshots — 1.0 (3)
+# Store screenshots — 1.0 (6)
+
+Four genuine screenshots were captured October 2, 2026 from the development-signed, sandboxed Store build **1.0 (6)** at `.build/screenshot-build6/Build/Products/Debug/Face Hugger.app`. It has the same source and artwork as the uploaded release build, including the original folder-hugging icon and mascot. macOS 27, dark appearance, active window. All four replaced the build-3 set in the English (U.S.) Mac screenshot set and returned **COMPLETE**.
+
+The app was driven with macOS UI scripting (System Events accessibility actions); windows were captured with `screencapture -x -o -l`. Text fields were filled through accessibility values, with one typed-and-deleted space per field so the app registered each edit. During capture, stray keystrokes typed on the Mac reached the app's local search field; they were cleared before any final capture. Final opaque sRGB PNGs are in [1.0-build6](1.0-build6/), framed by `Scripts/Art/frame_screenshots.swift` (centered, unscaled, 2560 × 1600 on `#25313C`; it reproduces the build-3 framing pixel for pixel). Unmodified window captures are in `1.0-build6/originals/`; checksums are in `1.0-build6/SHA256SUMS`.
+
+| Order | File | Genuine state | App Store asset ID |
+| --- | --- | --- | --- |
+| 1 | `01-workspace.png` | Saved pairing applied: bookmarked fixture folder, private review repo browsed live, remote-path conflicts flagged, earlier completed upload in the shelf | `25000019-6606-8471-8009-b888409bf7e8` |
+| 2 | `02-dataset-card.png` | Dataset-card editor after an actual **Draft on this Mac** run with Apple Intelligence; notes entered for the harmless fixture; draft discarded, nothing saved | `29c00019-6606-8471-8024-a7ad756fcaaa` |
+| 3 | `03-file-filters.png` | Filters popover showing the saved `logs/**` exclusion; cancelled without changes | `81800019-6606-8471-8029-b307b2ec2035` |
+| 4 | `04-saved-pairing.png` | Saved pairings popover | `2d000019-6606-8471-8020-2a32742d13f5` |
+
+No upload, remote write, or file save happened during this capture. The app's saved token authenticated and listed the private review repository. Screenshot set `cdfea2a3-600d-4df0-9eff-a1cc43296baf` (`APP_DESKTOP`). No App Review submission or release was performed.
+
+## Historical set — 1.0 (3)
+
+The build-3 set below was replaced on October 2, 2026 because its title bars showed the retired mascot. Its files remain in [1.0-build3](1.0-build3/).
 
 Four genuine screenshots were captured September 30, 2026 from the development-signed, sandboxed Store build **1.0 (3)** at `.build/store-xcode/Build/Products/Debug/Face Hugger.app`, using the same source and approved icon as the uploaded release build. macOS **27.0.1**, dark appearance. All four were uploaded to the English (U.S.) Mac screenshot set and returned **COMPLETE**.
 

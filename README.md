@@ -6,7 +6,7 @@
 
 A native Mac upload manager for Hugging Face. Give your big folders a home.
 
-Face Hugger brings a local file preview, remote repository browser, and persistent upload queue into one SwiftUI workspace for macOS 15 and later. **Native backend build 1.0 (4) is built and signed; release validation is still in progress.** Existing direct beta and Store build 3 artifacts use the older Python/Hugging Face CLI backend; their verification results do not establish build-4 behavior.
+Face Hugger brings a local file preview, remote repository browser, and persistent upload queue into one SwiftUI workspace for macOS 15 and later. **Store build 1.0 (6) is built, signed, and attached to the App Store draft; release validation is still in progress.** Existing direct beta and Store build 3 artifacts use the older Python/Hugging Face CLI backend; their verification results do not establish native-build behavior.
 
 ## Workspace
 
@@ -34,7 +34,7 @@ open ".build/xcode/Build/Products/Debug/Face Hugger.app"
 
 Connect with a token that can write to the chosen repository. Select a local folder and destination, review filters, then start the upload. Matching remote paths may be replaced; other files remain. Source folders stay live rather than being snapshotted. The native engine checks for changes and requires a new job when a saved upload’s source changes. Stopping does not undo remote commits. Closing the window leaves the app running; quitting stops an active transfer.
 
-For dataset repositories, choose **Dataset card…** beside the remote folder controls. Add purpose, source, license, and limitations; use the template or **Draft on this Mac**. The model rewrites only your purpose into an overview; measured facts and declarations stay deterministic. Existing local README files open for editing and side-by-side comparison. Save through the native dialog, then include the card in a new upload to the repository root. Nothing is published automatically. On-device generation needs macOS 26+, an Apple Intelligence-capable Mac with its model ready, and a build made with Xcode 26+; the template works on macOS 15 and Intel. This feature is in the development build, not the already-uploaded Store build 4. The development build passed 71 Swift tests plus signed-app checks for on-device drafting, README comparison, local save, and unsaved-note protection; an actual model cancellation smoke test also passed.
+For dataset repositories, choose **Dataset card…** beside the remote folder controls. Add purpose, source, license, and limitations; use the template or **Draft on this Mac**. The model rewrites only your purpose into an overview; measured facts and declarations stay deterministic. Existing local README files open for editing and side-by-side comparison. Save through the native dialog, then include the card in a new upload to the repository root. Nothing is published automatically. On-device generation needs macOS 26+, an Apple Intelligence-capable Mac with its model ready, and a build made with Xcode 26+; the template works on macOS 15 and Intel. This feature ships in Store builds 5 and 6; build 4 does not include it. The development build passed 71 Swift tests plus signed-app checks for on-device drafting, README comparison, local save, and unsaved-note protection; an actual model cancellation smoke test also passed. FoundationModels is weak-linked, so builds still launch on macOS 15.
 
 [Privacy policy](docs/privacy.md) · [Support](https://github.com/zak-keown/face-hugger/issues) · [Native release gate](docs/native-backend-release.md)
 
@@ -46,6 +46,6 @@ Uploads require the app to remain running and the Mac awake. There is no schedul
 
 The Store build uses [project-store.yml](project-store.yml) and [Store packaging](docs/store-build.md). Packaging performs a native-only binary/dependency audit before signing the installer. The older Developer ID beta packaging flow is documented in [releasing.md](docs/releasing.md); runtime setup instructions there describe the historical beta until that flow is revalidated.
 
-The native build 4 has passed its package audit, is processed and attached to the App Store draft, and has an Apple-verified OS-only encryption flag. The old build-3 third-party TLS declaration remains historical. No App Review submission or release has occurred.
+Native build 6 has passed its package audit, is processed and attached to the App Store draft, and has an Apple-verified OS-only encryption flag. It is build 5's code with the new original icon and mascot. Builds 4 and 5 remain uploaded but are no longer attached. The old build-3 third-party TLS declaration remains historical. No App Review submission or release has occurred.
 
 Face Hugger is an independent project, not an official Hugging Face application.

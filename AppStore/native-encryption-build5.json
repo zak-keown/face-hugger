@@ -1,0 +1,15 @@
+{
+  "buildId": "dcb5fca3-f5e0-4020-91a3-de0ac7512207",
+  "version": "1.0",
+  "build": "5",
+  "usesNonExemptEncryption": false,
+  "processingState": "VALID",
+  "readbackVerified": true,
+  "networking": "Apple URLSession",
+  "hashing": "Apple CryptoKit SHA-256",
+  "credentials": "Apple Security Keychain",
+  "thirdPartyTLSBundled": false,
+  "documentationBasis": "https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption",
+  "bundleAudit": "docs/verification/native-bundle-build5.json",
+  "onDeviceModel": "Apple FoundationModels (optional, on device, weak-linked)"
+}

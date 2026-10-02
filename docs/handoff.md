@@ -1,6 +1,10 @@
-# Face Hugger handoff — September 30, 2026
+# Face Hugger handoff — October 2, 2026
 
-## Current outcome — native build 4
+## Current outcome — build 6 attached
+
+Build 6 (`62d74e22-0d89-4f50-900c-a6f1a6fbf043`) is attached to the draft as of October 2, 2026. It is build 5's code (build 4's native backend plus the dataset-card editor) with the new original icon and mascot: a coral creature hugging a manila folder with an upload arrow, on the slate-blue tile. Unsigned executables match build 5 byte for byte. Validation: 0 errors, 0 warnings, 0 blockers. Its expanded installer passed the native audit; FoundationModels is weak-linked for macOS 15. See [native evidence](native-backend-release.md#build-6--original-icon-attached-to-the-app-store-draft). The review notes no longer name a build number. Four genuine build-6 screenshots, including an on-device dataset-card draft, replaced the build-3 set; see [capture provenance](../AppStore/screenshots/README.md). Capture used shell `screencapture` plus System Events accessibility scripting; the app must be frontmost, so keystrokes typed on the Mac during capture land in it. Before submitting: confirm the review details' password matches the app's working token, run on macOS 15 and Intel or Rosetta, and do the browser-only checks. Nothing submitted or released.
+
+## Native build 4
 
 The native replacement is implemented, signed, and audited. Networking uses URLSession, hashing uses CryptoKit, and the package contains no Python/OpenSSL/Xet runtime. 66 Swift tests and the live 16 MiB cancellation/fresh-process-resume/download-verification flow passed, with disposable test repositories cleaned. The signed sandboxed UI also restored its saved bookmark and uploaded the approved four-file fixture. See [native backend evidence](native-backend-release.md) and [current App Store state](../AppStore/README.md). Build 4 (`f701748b-9e6a-45e1-a4cf-771e656f7dad`) is processed VALID and attached to the existing draft. Apple reports `usesNonExemptEncryption=false`; latest ASC validation has 0 errors/warnings/blockers. It contains the approved icon. No App Review submission or public release.
 
@@ -30,7 +34,7 @@ Retain private dataset `zakkeown/face-hugger-app-review-89503494` and token **Fa
 
 ## Signing and tools
 
-ASC CLI `/Users/zakkeown/Code/space-case/.tmp/tools/asc/asc`, profile `SpaceCase`, `ASC_TELEMETRY_DISABLED=1`. API auth is in Keychain; CLI web MFA failed historically, while Safari is signed in. Do not recreate the app or retry web MFA for API tasks.
+ASC CLI `/opt/homebrew/bin/asc` (5.9.0), profile `SpaceCase`, `ASC_TELEMETRY_DISABLED=1`. The CLI's default profile is a different account, so always pass `--profile SpaceCase`. API auth is in Keychain; CLI web MFA failed historically, while Safari is signed in. Do not recreate the app or retry web MFA for API tasks.
 
 Team `3FMAPDQDGP`. Store application certificate `J96CN8H3CC`, identity `D9C38F064E9E179FDEA737994F4D32550439EEA7`; installer certificate `7HQ7WWX8TW`, identity `4CCB7F23C5F79F2F5AFE4C9D59FB7F9F6FBB2BB3`; profile `6TA8PNK7KK`, **Face Hugger Mac App Store**, UUID `a7216289-cdf0-41be-97ca-718aa5e31617`. Keys are in login Keychain; raw temporary keys/CSRs removed. See [store-build.md](store-build.md).
 

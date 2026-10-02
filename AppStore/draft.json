@@ -14,8 +14,10 @@
   "versionId": "6302c414-5900-40dd-bb0d-2b886d65496b",
   "notSubmitted": true,
   "unresolved": [
-    "Clean-machine installation and longer real-network interruption validation",
-    "Intel runtime execution",
+    "Confirm the App Review password field holds the token the app uses (the app's saved token authenticated on 2026-10-02)",
+    "Run on macOS 15 and on Intel (or Rosetta); clean-machine installation",
+    "Longer real-network interruption validation",
+    "Browser checks: App Privacy published, agreements, Regulations and Permits declarations",
     "Final release-owner submission approval"
   ],
   "validationReport": "AppStore/validation.json",
@@ -26,17 +28,21 @@
   "contentRights": "USES_THIRD_PARTY_CONTENT",
   "privacyPublished": true,
   "reviewAccessConfigured": true,
-  "storePackage": "dist/store/FaceHugger-1.0-4.pkg",
-  "buildId": "f701748b-9e6a-45e1-a4cf-771e656f7dad",
-  "encryptionStatus": "Build 4 OS-only encryption: usesNonExemptEncryption=false verified from processed Apple build",
+  "storePackage": "dist/store/FaceHugger-1.0-6.pkg",
+  "buildId": "62d74e22-0d89-4f50-900c-a6f1a6fbf043",
+  "encryptionStatus": "Build 6 OS-only encryption: usesNonExemptEncryption=false verified from processed Apple build",
   "screenshots": {
     "count": 4,
     "locale": "en-US",
     "displayType": "APP_DESKTOP",
     "state": "COMPLETE",
-    "path": "AppStore/screenshots/1.0-build3"
+    "path": "AppStore/screenshots/1.0-build6",
+    "capturedFromBuild": "6"
   },
   "historicalBuild3EncryptionDeclarationId": "deb48a27-898e-44dc-8da5-77c2cf681899",
   "historicalBuild3EncryptionFilingMaterials": "output/pdf/README.md",
-  "nativeEvidence": "docs/native-backend-release.md"
+  "nativeEvidence": "docs/native-backend-release.md",
+  "buildNumber": "6",
+  "buildAttachedVerified": "2026-10-02",
+  "previousNativeBuildId": "dcb5fca3-f5e0-4020-91a3-de0ac7512207"
 }

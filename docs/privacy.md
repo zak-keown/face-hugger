@@ -2,7 +2,7 @@
 
 Effective September 30, 2026. Face Hugger is developed by Zak Keown. For privacy or support requests, contact [zak.k.ai@outlook.com](mailto:zak.k.ai@outlook.com).
 
-This policy covers existing Python-based builds and the native backend. Store build 3 uses the bundled Python backend; native build 4 has been verified and is awaiting release. Dataset-card drafting is a subsequent development feature.
+This policy covers existing Python-based builds and the native backend. Store build 3 uses the bundled Python backend. The native backend, including optional dataset-card drafting, is in Store build 6, which is awaiting release.
 
 ## What the app does with your information
 
