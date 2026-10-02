@@ -38,8 +38,8 @@ The table records the shared adaptive theme. The current activity shelf uses its
 
 ## Assets
 
-`Resources/Assets.xcassets` contains the app icon in all standard Mac sizes and a transparent `Hugger` image. The user explicitly directed the identity toward a Hugging Face-like emoji wrapped by an Alien-style facehugger. The artwork has a happy yellow face, hugging hands, tan segmented fingers around the head, and a long curved tail. No folder, upload glyph, or antenna blob remains.
+`Resources/Assets.xcassets` contains the app icon in all standard Mac sizes and a transparent `Hugger` image. The original coral creature has a simple face and soft unjointed arms wrapped around a manila folder with an upload arrow. It uses the slate-blue `#123858` icon tile and avoids borrowed mascot and creature anatomy.
 
-The master artwork is `Resources/Artwork/face-hugger-master.png`, generated with the built-in imagegen tool. `Scripts/Art/build_assets.swift` mechanically resizes it, preserving transparency, and packages the icon on a pale native rounded tile. Run `swift Scripts/Art/build_assets.swift` to regenerate all sizes. Generation prompt is recorded in `Resources/Artwork/prompt.txt`.
+The master artwork is `Resources/Artwork/face-hugger-master.png`, generated with the built-in imagegen tool. `Scripts/Art/build_assets.swift` mechanically resizes it, preserving transparency, and packages the icon on a slate-blue native rounded tile. Run `swift Scripts/Art/build_assets.swift` to regenerate all sizes. Generation prompt is recorded in `Resources/Artwork/prompt.txt`.
 
 File-status follow-up: the native local table now shows New path, Remote path exists, Excluded, or Not checked. This compares previewed paths only, without content-equality claims. Missing-source jobs support Locate folder and manual resume; likely account/network failures show recovery guidance.
